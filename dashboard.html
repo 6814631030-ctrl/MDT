@@ -193,6 +193,19 @@
         font-weight: bold;
     }
 
+    .LocationInput {
+        flex: 1;
+        background: #000;
+        border: 1px solid #005580;
+        color: #00ccff;
+        padding: 8px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 14px;
+        width: 250px;
+        outline: none;
+    }
+    .LocationInput:focus { border-color: #00ccff; }
+
     /* Duty Buttons */
     #startDuty { border-color: #0f0; color: #0f0; background: rgba(0, 255, 0, 0.05); }
     #startDuty:hover { background: #0f0; color: #000; box-shadow: 0 0 10px #0f0; }
@@ -219,18 +232,6 @@
     }
     #callsignInput:focus { border-color: #00ccff; }
 
-    #LocationInput {
-        flex: 1;
-        background: #000;
-        border: 1px solid #005580;
-        color: #00ccff;
-        padding: 8px;
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 14px;
-        width: 250px;
-        outline: none;
-    }
-    #LocationInput:focus { border-color: #00ccff; }
 
     #updateCallsignBtn {
         background: #005580;
@@ -249,6 +250,15 @@
         overflow-y: auto;
         position: relative;
     }
+
+        /* --- CONTENT AREA --- */
+    .contentPanic {
+        flex: 0.5;
+        padding: 25px;
+        overflow-y: auto;
+        position: relative;
+    }
+
 
     .status-panel {
         display: grid;
@@ -288,9 +298,53 @@
         border-bottom: 1px dashed #555; padding-bottom: 5px;
     }
 
+    /* 1. ตัวฉากหลัง (Background Overlay) */
+    #panicModal {
+    /* ทำให้ลอยหลุดจากหน้าเว็บปกติ */
+    position: fixed; 
+    top: 0; 
+    left: 0;
+    
+    /* ขยายให้เต็มจอ */
+    width: 100vw; 
+    height: 100vh;
+    
+    /* สีพื้นหลังมืดๆ โปร่งแสง */
+    background-color: rgba(0, 0, 0, 0.7); 
+    
+    /* เทคนิคจัดกึ่งกลางด้วย Flexbox */
+    display: none; /* ซ่อนไว้ก่อน (JS จะมาแก้เป็น flex ทีหลัง) */
+    justify-content: center; /* จัดกึ่งกลางแนวนอน */
+    align-items: center;     /* จัดกึ่งกลางแนวตั้ง */
+    
+    /* ให้มันอยู่ชั้นบนสุด ทับทุกอย่าง */
+    z-index: 9999; 
+}
+
+/* 2. ตัวกล่องเนื้อหาข้างใน (Content Box) */
+    .modal-content {
+    background-color: #1e1e1e; /* สีพื้นหลังกล่อง */
+    color: white;
+    padding: 20px;
+    border-radius: 10px;       /* มุมโค้ง */
+    border: 2px solid #ff3333; /* ขอบสีแดง */
+    width: 90%;                /* ความกว้าง */
+    max-width: 400px;          /* กว้างสุดไม่เกิน 400px (กันใหญ่เกินในคอม) */
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); /* เงาสีแดงฟุ้งๆ */
+}
+
     #logs { list-style: none; display: flex; flex-direction: column; gap: 5px; }
     
     #logs li {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 12px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 13px;
+        border-left: 3px solid #555;
+    }
+    #logsPanic { list-style: none; display: flex; flex-direction: column; gap: 5px; }
+    
+        #logsPanic li {
         background: rgba(255, 255, 255, 0.05);
         padding: 8px 12px;
         font-family: 'Share Tech Mono', monospace;
@@ -306,7 +360,7 @@
 
 <audio id="clickSound" src="click.mp3" preload="auto"></audio>
 <audio id="keyClickSound" src="click.mp3" preload="auto"></audio>
-<audio id="panicSound" src="PanicButton.mp3" preload="auto"></audio>
+<audio id="panicSound" src="Panic.mp3" preload="auto"></audio>
 
 <header>
     <div class="header-left">
@@ -375,7 +429,6 @@
                 <div class="status-value mono" id="totalTime">00:00:00</div>
             </div>
         </div>
-
         <div class="logs-container">
             <h2>📜 REALTIME LOGS / บันทึกเหตุการณ์สด</h2>
             <ul id="logs">
@@ -383,6 +436,7 @@
             </ul>
         </div>
     </section>
+
 </main>
 
 <div id="panicModal" style="display: none;">
@@ -409,20 +463,20 @@
                     <select id="panicUnit" class="modal-input" size="2">
                         <option value="SAHP" data-role="&1296713121204797450">Station Patrol Unit (SAHP)</option>
                         <option value="SWAT" data-role="&1156904628726808602">SWAT Team (SWAT)</option>
-                </select> <button class="nav-btnt" onclick="nextPanicStep(3)">NEXT / ถัดไป</button>
+                </select>
             </div>
         </div>
-            <div class="header-right" id="step3" >
+            <div class="header-right" >
                 <div class="content">
                     <h3>LOCATION / สถานที่เกิดเหตุ:</h3>
-                    <input type="text" id="LocationInput" placeholder="ระบุสถานที่ (เช่น Hawick Avenue)...">
+                    <input type="text" class="LocationInput" id="panicLocation" placeholder="ระบุสถานที่ (เช่น Hawick Avenue)...">
                     <button class="nav-btn" onclick="confirmPanic()">CONFIRM / ยืนยัน</button>
                 </div> 
         </div>
     </div>
 </div>
 <div class="content">
-    <button bold="10px"  class="nav-btn" text-align="center" id="endDuty" onclick="closePanicModal()">CLOSE</button>
+    <button bold="10px"  class="nav-btn" text-align="center" id="endDuty" onclick="closePanicModal()">CLOSE X</button>
 </div>
 <script>
     // Script เดิมสำหรับ Logic เสียงและการแสดงปุ่ม Admin
