@@ -1,35 +1,28 @@
+// ====== ck.js (แก้ไขใหม่) ======
 const updateBtn = document.getElementById("updateCallsignBtn");
 const callsignInput = document.getElementById("callsignInput");
 
-updateBtn.addEventListener("click", () => {
-  const newCallsign = callsignInput.value.trim();
-  if (!newCallsign) {
-    alert("กรุณากรอก Callsign ใหม่!");
-    return;
-  }
-  if (!/^[a-zA-Z0-9-]{1,10}$/.test(newCallsign)) {
-    alert("กรุณากรอก Callsign ที่ถูกต้อง (ตัวอักษรและตัวเลข 1-10 ตัวอักษร)!");
-    return;
-  }
+if(updateBtn && callsignInput) {
+    updateBtn.addEventListener("click", () => {
+        const newCallsign = callsignInput.value.trim();
+        
+        // ดึง ID ผู้ใช้ปัจจุบัน (ซึ่ง fb.js ตั้งค่าไว้ให้แล้ว)
+        const officerId = localStorage.getItem("officerId") || "1";
 
-  const userKey = localStorage.getItem("userKey");
-  if (!userKey) {
-    alert("ไม่พบผู้ใช้ที่ล็อกอิน!");
-    return;
-  }
+        if (!newCallsign) return alert("กรุณากรอกข้อมูล");
 
-  firebase.database().ref(`Users/${userKey}`).update({ callsign: newCallsign })
-    .then(() => {
-      alert("อัปเดต Callsign เรียบร้อยแล้ว!");
-      localStorage.setItem("callsign", newCallsign);
-
-      callsignInput.value = "";
-      const userInfo = document.getElementById("userInfo");
-      if (userInfo) userInfo.textContent = `Callsign: ${newCallsign}`;
-    })
-    .catch((err) => {
-      console.error("เกิดข้อผิดพลาด:", err);
-      alert("อัปเดต Callsign ไม่สำเร็จ!");
+        firebase.database().ref("Users/" + officerId).update({
+            callsign: newCallsign
+        }).then(() => {
+            alert("อัปเดต Callsign เรียบร้อย: " + newCallsign);
+            
+            // อัปเดตหน้าจอทันทีไม่ต้องรีโหลด
+            document.getElementById("userInfo").textContent = 
+                `${localStorage.getItem("rank")} | ${newCallsign} | ID: ${officerId}`;
+            
+            callsignInput.value = "";
+        }).catch(err => {
+            alert("Error: " + err.message);
+        });
     });
-});
-
+}
