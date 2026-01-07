@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>เข้าสู่ระบบฐานข้อมูลกลาง - MDT SYSTEM</title>
+  <link rel="stylesheet" href="style.css">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ตั้งค่าพื้นฐาน */
+    * {
+      box-sizing: border-box;
+      font-family: 'Chakra Petch', sans-serif; /* ฟอนต์ไทยสไตล์ Tech */
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      color: #e0f7fa;
+      overflow: hidden;
+    }
+
+    /* วิดีโอ background */
+    #bg-video {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      min-width: 100vw;
+      min-height: 100vh;
+      z-index: -2;
+      object-fit: cover;
+      opacity: 0.4;
+      filter: grayscale(80%) contrast(1.2);
+    }
+
+    /* Scanline Overlay (ลายเส้นหน้าจอ) */
+    .scanlines {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+      background-size: 100% 4px, 6px 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* Top Status Bar (แถบสถานะด้านบน) */
+    .top-bar {
+      background: #001a33;
+      border-bottom: 2px solid #00ccff;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      color: #00ccff;
+      text-transform: uppercase;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    /* คอนเทนเนอร์หลัก */
+    .login-container {
+      position: relative;
+      background: rgba(11, 22, 34, 0.95);
+      padding: 0;
+      border: 2px solid #00ccff;
+      box-shadow: 0 0 15px rgba(0, 204, 255, 0.3);
+      text-align: center;
+      max-width: 450px;
+      margin: 8% auto;
+      border-radius: 0;
+    }
+
+    /* Header ของกล่อง Login */
+    .login-header {
+      background: #003366;
+      color: white;
+      padding: 10px 15px;
+      text-align: left;
+      border-bottom: 1px solid #00ccff;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .login-header span.indicator {
+      width: 8px;
+      height: 8px;
+      background-color: #0f0;
+      display: inline-block;
+      border-radius: 50%;
+      margin-right: 8px;
+      box-shadow: 0 0 5px #0f0;
+    }
+
+    /* เนื้อหาภายใน */
+    .login-body {
+      padding: 30px;
+    }
+
+    .logo {
+      width: 90px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 5px rgba(255,255,255,0.5));
+    }
+
+    h1 {
+      font-size: 26px;
+      margin: 0;
+      color: #fff;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-shadow: 0 0 5px #00ccff;
+    }
+
+    .subtitle {
+      color: #8bb;
+      font-size: 14px;
+      margin-top: 5px;
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
+
+    /* Warning Banner */
+    .warning-banner {
+      background-color: #4d0000;
+      color: #ffcccc;
+      font-size: 12px;
+      padding: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #ff0000;
+      line-height: 1.4;
+    }
+
+    /* Input Fields */
+    .input-group {
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .input-group label {
+      color: #00ccff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      display: block;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      background: #000;
+      border: 1px solid #005580;
+      color: #00ff00;
+      font-size: 16px;
+      border-radius: 0;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    .input-group input:focus {
+      border-color: #00ccff;
+      box-shadow: 0 0 8px rgba(0, 204, 255, 0.5);
+    }
+
+    .input-group input::placeholder {
+      color: #004466;
+      font-size: 14px;
+    }
+
+    /* Button */
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #004080;
+      color: #00ccff;
+      font-size: 18px;
+      border: 1px solid #00ccff;
+      border-radius: 0;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #00ccff;
+      color: #000;
+      box-shadow: 0 0 15px #00ccff;
+    }
+
+    .error {
+      color: #ff3333;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .footer-text {
+      margin-top: 25px;
+      font-size: 10px;
+      color: #555;
+    }
+
+    .contact-link {
+        color: #667788;
+        font-size: 12px;
+        margin-top: 15px;
+        display: block;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+    .contact-link:hover {
+        color: #00ccff;
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <video autoplay muted loop id="bg-video">
+    <source src="SAHP.mp4" type="video/mp4">
+  </video>
+  
+  <div class="scanlines"></div>
+
+  <div class="top-bar">
+    <span>สถานะ: <strong>ออนไลน์</strong></span>
+    <span id="clock">00:00:00</span>
+    <span>เครือข่าย: <strong>ปลอดภัย (SECURE)</strong></span>
+  </div>
+
+  <div class="login-container">
+    <div class="login-header">
+       <span><span class="indicator"></span>ระบบเชื่อมต่อฐานข้อมูลกรมตำรวจ (MDT) v.4.0</span>
+       <span>[ _ ] [ X ]</span>
+    </div>
+
+    <div class="login-body">
+        <img src="CHPSS.png" alt="Logo" class="logo">
+        <h1>San Andreas Highway Patrol</h1>
+        <p class="subtitle">ระบบคอมพิวเตอร์ปฏิบัติการเคลื่อนที่</p>
+        
+        <div class="warning-banner">
+            *** คำเตือน: เฉพาะเจ้าหน้าที่ผู้ได้รับอนุญาตเท่านั้น ***<br>
+            การเข้าถึงข้อมูลโดยมิชอบ มีความผิดตามกฎหมายอาญา
+        </div>
+
+        <form id="loginForm">
+        <div class="input-group">
+            <label>หมายเลขตรา / ชื่อผู้ใช้งาน</label>
+            <input type="text" id="username" placeholder="กรอกรหัสประจำตัว..." required autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>รหัสผ่านรักษาความปลอดภัย</label>
+            <input type="password" id="password" placeholder="กรอกรหัสผ่าน..." required>
+        </div>
+        <button type="submit">ยืนยันการเชื่อมต่อระบบ</button>
+        <p id="error" class="error"></p>
+        
+        <a href="#" class="contact-link">>> ยังไม่มีบัญชี? ติดต่อฝ่ายเทคโนโลยีสารสนเทศ</a>
+        
+        <p class="footer-text">ทรัพย์สินของรัฐบาลรัฐซานแอนเดรียส ห้ามคัดลอกหรือดัดแปลง</p>
+        </form>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script src="script.js"></script>
+  
+  <script>
+    function updateTime() {
+        const now = new Date();
+        // แสดงเวลาแบบ 24 ชั่วโมง
+        const timeString = now.toLocaleTimeString('th-TH', { hour12: false });
+        document.getElementById('clock').innerText = "เวลา: " + timeString;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+  </script>
+</body>
+</html>
