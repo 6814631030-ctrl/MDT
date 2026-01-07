@@ -1,4 +1,4 @@
-// ====== fb.js (Final Fix: Auto Reload on Log out) ======
+// ====== fb.js (Fixed: Callsign Update Added) ======
 const firebaseConfig = {
     apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
     authDomain: "law-enforment.firebaseapp.com",
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const officerRef = db.ref("Users/" + currentId);
     
-    // Elements Reference
+    // Elements Reference (เพิ่มปุ่ม Callsign เข้าไปในรายการ)
     const els = {
         userInfo: document.getElementById("userInfo"), 
         currentOfficer: document.getElementById("currentOfficer"),
@@ -33,7 +33,10 @@ document.addEventListener("DOMContentLoaded", () => {
         startBtn: document.getElementById("startDuty"),
         endBtn: document.getElementById("endDuty"),
         logs: document.getElementById("logs"),
-        clickSound: document.getElementById("clickSound")
+        clickSound: document.getElementById("clickSound"),
+        // เพิ่ม 2 ตัวนี้
+        callsignInput: document.getElementById("callsignInput"),
+        updateCallsignBtn: document.getElementById("updateCallsignBtn")
     };
 
     officerRef.on("value", snapshot => {
@@ -42,10 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
             // 1. แสดงข้อมูลพื้นฐาน
             const name = user.name || "Unknown";
             const rank = user.rank || "Officer";
+            const callsign = user.callsign || "-"; // ดึงค่า Callsign
             
             if(els.currentOfficer) els.currentOfficer.textContent = name;
             if(els.info) els.info.textContent = `${rank} ${name}`;
-            if(els.userInfo) els.userInfo.textContent = `${rank} | ${user.callsign || '-'} | ID: ${currentId}`;
+            
+            // อัปเดตบรรทัดนี้ให้แสดง Callsign ล่าสุดเสมอ
+            if(els.userInfo) els.userInfo.textContent = `${rank} | ${callsign} | ID: ${currentId}`;
             
             if(els.logoRoot) {
                 if (user.profilePicBase64 && user.profilePicBase64.length > 50) {
@@ -72,6 +78,36 @@ document.addEventListener("DOMContentLoaded", () => {
             initDutySystem(officerRef, els, currentId);
         }
     });
+
+    // --- 4. ระบบอัปเดต Callsign (เพิ่มใหม่) ---
+    if (els.updateCallsignBtn && els.callsignInput) {
+        // ใช้ cloneNode เพื่อล้าง Event เก่า (กันกดเบิ้ล)
+        const newCallsignBtn = els.updateCallsignBtn.cloneNode(true);
+        els.updateCallsignBtn.parentNode.replaceChild(newCallsignBtn, els.updateCallsignBtn);
+        els.updateCallsignBtn = newCallsignBtn;
+
+        els.updateCallsignBtn.addEventListener("click", () => {
+            const newCallsign = els.callsignInput.value.trim().toUpperCase();
+            
+            if (!newCallsign) {
+                alert("กรุณากรอกรหัสเรียกขาน / Please enter callsign");
+                return;
+            }
+
+            // เล่นเสียง
+            if(els.clickSound) els.clickSound.play().catch(()=>{});
+
+            // ส่งข้อมูลไป Firebase
+            officerRef.update({ 
+                callsign: newCallsign 
+            }).then(() => {
+                alert(`อัปเดตเป็น ${newCallsign} เรียบร้อย!`);
+                els.callsignInput.value = ""; // ล้างช่องกรอก
+            }).catch((err) => {
+                alert("เกิดข้อผิดพลาด: " + err.message);
+            });
+        });
+    }
 });
 
 function initDutySystem(ref, els, id) {
@@ -83,18 +119,15 @@ function initDutySystem(ref, els, id) {
 
         // --- 1. ปุ่ม Start (เข้าเวร) ---
         if(els.startBtn) {
-            // ปลดล็อค pointer-events เพื่อไม่ให้ปุ่มตาย
             els.startBtn.style.pointerEvents = "auto"; 
             
             if (isOnDuty) {
-                // ถ้าเข้าเวรอยู่: ปุ่ม Start เป็นสีเทา
                 els.startBtn.disabled = true;
                 els.startBtn.style.opacity = "0.5";
                 els.startBtn.style.filter = "grayscale(100%)";
                 els.startBtn.innerHTML = "ON DUTY (ทำงานอยู่)";
                 els.startBtn.style.border = "1px solid #555";
             } else {
-                // ถ้าออกเวรแล้ว: ปุ่ม Start เป็นสีปกติ พร้อมกด
                 els.startBtn.disabled = false;
                 els.startBtn.style.opacity = "1";
                 els.startBtn.style.filter = "none";
@@ -106,17 +139,14 @@ function initDutySystem(ref, els, id) {
 
         // --- 2. ปุ่ม End (ออกเวร) ---
         if(els.endBtn) {
-            // ปลดล็อค pointer-events เพื่อไม่ให้ปุ่มตาย
             els.endBtn.style.pointerEvents = "auto";
 
             if (!isOnDuty) {
-                // ถ้าออกเวรแล้ว: ปุ่ม End เป็นสีเทา
                 els.endBtn.disabled = true;
                 els.endBtn.style.opacity = "0.5";
                 els.endBtn.style.filter = "grayscale(100%)";
                 els.endBtn.style.border = "1px solid #555";
             } else {
-                // ถ้าเข้าเวรอยู่: ปุ่ม End เป็นสีแดง พร้อมกด
                 els.endBtn.disabled = false;
                 els.endBtn.style.opacity = "1";
                 els.endBtn.style.filter = "none";
@@ -157,7 +187,6 @@ function initDutySystem(ref, els, id) {
                 localStorage.setItem("dutyStartTime_" + id, timeStr);
                 
                 updateUI(); 
-                // บังคับ ck.js ทำงาน
                 if(typeof updateDutyTimer === "function") updateDutyTimer();
             });
         });
@@ -170,22 +199,19 @@ function initDutySystem(ref, els, id) {
         els.endBtn = newEndBtn;
 
         els.endBtn.addEventListener("click", () => {
-            // เล่นเสียง
             if(els.clickSound) els.clickSound.play().catch(()=>{});
 
             const now = new Date().toISOString();
             const currentSessionKey = localStorage.getItem("session_" + id);
 
-            // ฟังก์ชันสำหรับเคลียร์ค่าและรีโหลด
             const performLogout = () => {
                 localStorage.removeItem("session_" + id);
                 localStorage.removeItem("dutyStartTime_" + id);
                 updateUI();
                 
-                // *** เพิ่มการรีโหลดหน้าจอเพื่อแก้ UI ค้าง ***
                 setTimeout(() => {
                     window.location.reload(); 
-                }, 500); // รอ 0.5 วินาทีแล้วรีโหลดเลย
+                }, 500); 
             };
 
             if(currentSessionKey) {
@@ -194,11 +220,9 @@ function initDutySystem(ref, els, id) {
                     performLogout();
                 })
                 .catch(() => {
-                    // ถ้า Error ก็บังคับออกเลย
                     performLogout();
                 });
             } else {
-                // ถ้าหา Key ไม่เจอ ก็บังคับออกเลย
                 performLogout();
             }
         });
