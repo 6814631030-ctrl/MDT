@@ -60,73 +60,95 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+// ====== fb.js (ส่วนฟังก์ชัน initDutySystem ที่แก้ไขแล้ว) ======
+
 function initDutySystem(ref, els, id) {
-    let isOnDuty = localStorage.getItem("isOnDuty_" + id) === "true";
-    let currentKey = localStorage.getItem("session_" + id);
-
-    // ฟังก์ชันอัปเดต UI ปุ่มและเวลาเริ่ม
+    // ฟังก์ชันช่วยเช็คสถานะและปรับปุ่ม
     const updateUI = () => {
-        if(els.startBtn) els.startBtn.disabled = isOnDuty;
-        if(els.endBtn) els.endBtn.disabled = !isOnDuty;
-
-        // ดึงเวลาที่เริ่มกด On Duty มาแสดงในช่อง Session Start
+        // อ่านค่าสดๆ จาก LocalStorage ทุกครั้งที่อัปเดตปุ่ม
+        const isOnDuty = localStorage.getItem("isOnDuty_" + id) === "true";
         const storedStartTime = localStorage.getItem("dutyStartTime_" + id);
+
+        if(els.startBtn) els.startBtn.disabled = isOnDuty; // ถ้าเข้าเวรอยู่ -> ห้ามกดเริ่ม
+        if(els.endBtn) els.endBtn.disabled = !isOnDuty;    // ถ้าเข้าเวรอยู่ -> ให้กดออกได้
+
+        // แสดงเวลาเริ่มงาน
         if (storedStartTime && els.time) {
             const dateObj = new Date(storedStartTime);
-            // แสดงผลแบบ: 10:30:00 (07/01/2025)
             els.time.textContent = `${dateObj.toLocaleTimeString('th-TH')} (${dateObj.toLocaleDateString('th-TH')})`;
         } else if (els.time) {
             els.time.textContent = "--:--:--";
         }
     };
+
+    // เรียกทำงานครั้งแรกเพื่อจัดหน้าตาปุ่ม
     updateUI();
 
-    // --- กดเริ่มงาน (ON DUTY) ---
-    if(els.startBtn) els.startBtn.onclick = () => {
-        const now = new Date(); // เวลาปัจจุบัน
-        const timeStr = now.toISOString();
+    // --- ส่วนที่ 1: กดปุ่มเข้าเวร (Start Duty) ---
+    if(els.startBtn) {
+        // ลบ Event Listener เก่าออกก่อน (กันกดเบิ้ล)
+        const newStartBtn = els.startBtn.cloneNode(true);
+        els.startBtn.parentNode.replaceChild(newStartBtn, els.startBtn);
+        els.startBtn = newStartBtn; // อัปเดต reference
 
-        const newRef = ref.child("dutyLogs").push();
-        newRef.set({ 
-            startTime: timeStr, 
-            action: "เข้าเวรปฏิบัติหน้าที่ 🚨" 
-        }).then(() => {
-            isOnDuty = true;
-            currentKey = newRef.key;
-            
-            // Save LocalStorage (สำคัญมากสำหรับ Timer)
-            localStorage.setItem("isOnDuty_" + id, "true");
-            localStorage.setItem("session_" + id, currentKey);
-            localStorage.setItem("dutyStartTime_" + id, timeStr); // บันทึกเวลาเริ่ม
-            
-            updateUI();
-            if(els.clickSound) els.clickSound.play().catch(()=>{});
+        els.startBtn.addEventListener("click", () => {
+            const now = new Date();
+            const timeStr = now.toISOString();
+
+            // ส่งข้อมูลขึ้น Firebase
+            const newRef = ref.child("dutyLogs").push();
+            newRef.set({ 
+                startTime: timeStr, 
+                action: "เข้าเวรปฏิบัติหน้าที่ 🚨" 
+            }).then(() => {
+                // บันทึก Key และสถานะลงเครื่อง
+                localStorage.setItem("isOnDuty_" + id, "true");
+                localStorage.setItem("session_" + id, newRef.key); // จำ Key ไว้ใช้ตอนออก
+                localStorage.setItem("dutyStartTime_" + id, timeStr);
+                
+                updateUI(); // อัปเดตปุ่มทันที
+                if(els.clickSound) els.clickSound.play().catch(()=>{});
+            }).catch(err => alert("Error Start: " + err.message));
         });
-    };
+    }
 
-    // --- กดออกเวร (OFF DUTY) ---
-    if(els.endBtn) els.endBtn.onclick = () => {
-        const now = new Date().toISOString();
-        if(currentKey) {
-            ref.child("dutyLogs/" + currentKey).update({ 
-                endTime: now, 
-                action: "ออกเวร / จบการทำงาน ✅" 
-            });
-        }
-        
-        isOnDuty = false;
-        currentKey = null;
-        
-        // Clear LocalStorage
-        localStorage.removeItem("isOnDuty_" + id);
-        localStorage.removeItem("session_" + id);
-        localStorage.removeItem("dutyStartTime_" + id); // ลบเวลาเริ่ม
-        
-        updateUI();
-        if(els.clickSound) els.clickSound.play().catch(()=>{});
-    };
+    // --- ส่วนที่ 2: กดปุ่มออกเวร (End Duty) ---
+    if(els.endBtn) {
+        // ลบ Event Listener เก่าออกก่อน
+        const newEndBtn = els.endBtn.cloneNode(true);
+        els.endBtn.parentNode.replaceChild(newEndBtn, els.endBtn);
+        els.endBtn = newEndBtn; // อัปเดต reference
 
-    // Realtime Logs
+        els.endBtn.addEventListener("click", () => {
+            const now = new Date().toISOString();
+            
+            // *** จุดสำคัญที่แก้: ดึง Key จาก LocalStorage โดยตรง ***
+            const currentSessionKey = localStorage.getItem("session_" + id);
+
+            if(currentSessionKey) {
+                // อัปเดตเวลาออกที่ Key นั้น
+                ref.child("dutyLogs/" + currentSessionKey).update({ 
+                    endTime: now, 
+                    action: "ออกเวร / จบการทำงาน ✅" 
+                }).then(() => {
+                    // เคลียร์ค่าในเครื่อง
+                    localStorage.removeItem("isOnDuty_" + id);
+                    localStorage.removeItem("session_" + id);
+                    localStorage.removeItem("dutyStartTime_" + id);
+                    
+                    updateUI(); // อัปเดตปุ่มทันที
+                    if(els.clickSound) els.clickSound.play().catch(()=>{});
+                }).catch(err => alert("Error End: " + err.message));
+            } else {
+                // กรณีฉุกเฉิน: หา Key ไม่เจอ (แต่ปุ่มดันกดได้) ให้บังคับ Reset
+                alert("ไม่พบ Session เก่า - ทำการรีเซ็ตระบบ");
+                localStorage.removeItem("isOnDuty_" + id);
+                updateUI();
+            }
+        });
+    }
+
+    // --- ส่วนที่ 3: Realtime Logs (ไม่แก้) ---
     ref.child("dutyLogs").limitToLast(10).on("child_added", snap => {
         if(els.logs && !document.getElementById(snap.key)) {
             const val = snap.val();
