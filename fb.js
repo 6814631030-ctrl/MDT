@@ -1,6 +1,5 @@
-// ====== fb.js (แก้ไขใหม่) ======
+// ====== fb.js (Dynamic ID Support) ======
 
-// 1. ตั้งค่า Firebase (ใช้ค่าเดิมของคุณ)
 const firebaseConfig = {
     apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
     authDomain: "law-enforment.firebaseapp.com",
@@ -17,185 +16,215 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-// 2. ฟังก์ชันแปลงเวลา
+// ฟังก์ชันแปลงเวลา
 function parseDuration(durationStr) {
     const match = durationStr && durationStr.match(/(\d+)\s*ชั่วโมง\s*(\d+)\s*นาที\s*(\d+)\s*วินาที/);
     if (!match) return 0;
     return parseInt(match[1], 10) * 3600 + parseInt(match[2], 10) * 60 + parseInt(match[3], 10);
 }
 
-// 3. เริ่มทำงานเมื่อหน้าเว็บโหลดเสร็จ
 document.addEventListener("DOMContentLoaded", () => {
     
-    // --- จุดสำคัญ: ตั้งค่า ID ให้ตรงกับ Database ของคุณ (ในรูปคือ 1) ---
-    // ถ้าไม่มีใน localStorage ให้ใช้ "1" เป็นค่าเริ่มต้น (แก้จาก 4)
-    window.officerId = localStorage.getItem("officerId") || "1";
-    console.log("Current Officer ID:", window.officerId); // เช็คใน Console
+    // ==========================================
+    // 1. ระบุตัวตน: ตรวจสอบว่าใคร Login อยู่?
+    // ==========================================
+    // พยายามดึง ID จาก LocalStorage ที่หน้า Login บันทึกไว้
+    let currentId = localStorage.getItem("officerId");
 
-    const officerRef = db.ref("Users/" + window.officerId);
+    // [DEBUG MODE] ถ้าไม่มี ID (เช่นเปิดไฟล์ตรงๆ) ให้ถาม หรือใช้ค่า Default
+    if (!currentId) {
+        // ลองหาจาก badgeId เผื่อบันทึกผิด key
+        currentId = localStorage.getItem("badgeId");
+        
+        // ถ้ายังไม่มีอีก ให้ถาม User เลย (เฉพาะช่วงทดสอบ)
+        if (!currentId) {
+            currentId = prompt("System Debug: กรุณากรอก Officer ID เพื่อจำลองการ Login (เช่น 1, 301, 14002):", "14002");
+            if (currentId) {
+                localStorage.setItem("officerId", currentId);
+            } else {
+                alert("ไม่พบข้อมูลผู้ใช้ กรุณา Login ใหม่");
+                window.location.href = "index.html"; // ดีดกลับหน้า Login
+                return; 
+            }
+        }
+    }
 
-    // ประกาศตัวแปร HTML Elements
-    const elements = {
-        logs: document.getElementById("logs"),
+    // กำหนด Path ไปยัง User คนนั้นโดยเฉพาะ
+    const userPath = "Users/" + currentId;
+    const officerRef = db.ref(userPath);
+
+    console.log("Loading data for Officer ID:", currentId);
+    console.log("Database Path:", userPath);
+
+    // ==========================================
+    // 2. ดึงข้อมูล User มาแสดง (Profile)
+    // ==========================================
+    const els = {
+        userInfo: document.getElementById("userInfo"), // ใต้ชื่อ (Rank | Callsign | ID)
+        currentOfficer: document.getElementById("currentOfficer"), // ชื่อใหญ่
+        info: document.getElementById("info"), // ในกล่อง Status
+        time: document.getElementById("time"),
+        logoRoot: document.getElementById("logoRoot"),
         startBtn: document.getElementById("startDuty"),
         endBtn: document.getElementById("endDuty"),
+        logs: document.getElementById("logs"),
         totalTime: document.getElementById("totalTime"),
-        userInfo: document.getElementById("userInfo"),      // ข้อความเล็กใต้ชื่อ
-        currentOfficer: document.getElementById("currentOfficer"), // ชื่อตัวใหญ่
-        info: document.getElementById("info"),              // ในกล่อง Status
-        time: document.getElementById("time"),              // เวลา Login
-        clickSound: document.getElementById("clickSound"),
-        logoRoot: document.getElementById("logoRoot")
+        clickSound: document.getElementById("clickSound")
     };
 
-    // --- ส่วนดึงข้อมูล User (User Profile) ---
     officerRef.once("value").then(snapshot => {
         const user = snapshot.val();
         
         if (user) {
-            console.log("User Data Found:", user); // เช็คว่าเจอข้อมูลไหม
-            
-            // บันทึกค่าลงเครื่อง
-            localStorage.setItem("officerId", user.officerId); // ควรเป็น 1
-            localStorage.setItem("name", user.name);
-            localStorage.setItem("rank", user.rank);
-            localStorage.setItem("callsign", user.callsign);
+            // บันทึกข้อมูลล่าสุดลงเครื่อง
+            localStorage.setItem("name", user.name || "");
+            localStorage.setItem("rank", user.rank || "");
+            localStorage.setItem("callsign", user.callsign || "");
+            localStorage.setItem("badgeId", user.badgeId || user.officerId);
 
-            // แสดงผลหน้าเว็บ (แก้ปัญหา undefined)
-            if(elements.currentOfficer) elements.currentOfficer.textContent = user.name || "Unknown Officer";
+            // --- แสดงผล ---
+            // 1. ชื่อใหญ่บนหัว
+            if(els.currentOfficer) els.currentOfficer.textContent = user.name || "Unknown Officer";
+
+            // 2. ข้อมูลย่อย (Rank | Callsign | BadgeID)
+            const rankShow = user.rank || "Officer";
+            const callsignShow = user.callsign || "NO-CODE";
+            const idShow = user.badgeId || user.officerId || currentId;
             
-            // แสดง Rank | Callsign | ID
-            if(elements.userInfo) {
-                elements.userInfo.textContent = `${user.rank || ''} | ${user.callsign || 'No Callsign'} | ID: ${user.officerId}`;
+            if(els.userInfo) {
+                els.userInfo.textContent = `${rankShow} | ${callsignShow} | ${idShow}`;
             }
 
-            // แสดงในกล่อง Status
-            if(elements.info) elements.info.textContent = user.name;
+            // 3. ชื่อในกล่อง Status
+            if(els.info) els.info.textContent = `${rankShow} ${user.name}`;
 
-            // แสดงโลโก้
-            updateLogo(user);
+            // 4. เวลา Login
+            if(els.time) els.time.textContent = user.loginTime || "N/A";
 
-            // แสดงเวลา Login
-            if(elements.time) {
-                // ถ้าใน DB มี loginTime ให้ใช้ ถ้าไม่มีให้ใช้เวลาปัจจุบัน
-                elements.time.textContent = user.loginTime || new Date().toLocaleTimeString('th-TH');
+            // 5. รูปโปรไฟล์ (Check base64)
+            if(els.logoRoot) {
+                if (user.profilePicBase64 && user.profilePicBase64.startsWith("data:image")) {
+                    els.logoRoot.innerHTML = `<img src="${user.profilePicBase64}" style="width:100%; height:100%; object-fit:cover;">`;
+                } else {
+                    // ถ้าไม่มีรูป ให้แสดงตัวอักษรย่อ
+                    els.logoRoot.textContent = (user.name || "SP").substring(0, 2).toUpperCase();
+                    els.logoRoot.style.background = "#005580";
+                    els.logoRoot.style.display = "flex";
+                    els.logoRoot.style.alignItems = "center";
+                    els.logoRoot.style.justifyContent = "center";
+                }
             }
 
         } else {
-            console.error("ไม่พบข้อมูล User ID: " + window.officerId);
-            if(elements.currentOfficer) elements.currentOfficer.textContent = "USER NOT FOUND (ID wrong)";
+            console.error("ไม่พบข้อมูลที่ path: " + userPath);
+            alert(`Error: ไม่พบข้อมูล User ID: ${currentId} ในฐานข้อมูล`);
         }
-    }).catch(err => {
-        console.error("Firebase Error:", err);
     });
 
-    // --- ส่วนจัดการระบบ Duty (On/Off) ---
+    // ==========================================
+    // 3. ระบบ Duty (On/Off)
+    // ==========================================
     let isOnDuty = localStorage.getItem("isOnDuty") === "true";
     let currentSessionKey = localStorage.getItem("currentSessionKey");
 
-    // ปรับสถานะปุ่มตอนเริ่ม
-    if(elements.startBtn && elements.endBtn) {
-        elements.startBtn.disabled = isOnDuty;
-        elements.endBtn.disabled = !isOnDuty;
+    // Set ปุ่มตอนโหลดหน้า
+    if(els.startBtn && els.endBtn) {
+        els.startBtn.disabled = isOnDuty;
+        els.endBtn.disabled = !isOnDuty;
     }
 
     // ฟังก์ชันเริ่มงาน
-    window.startDuty = function() { // ทำให้เรียกใช้จาก HTML ได้ง่ายขึ้น
-        if (isOnDuty) return alert("คุณเข้าเวรอยู่แล้ว!");
+    window.startDuty = function() {
+        if(isOnDuty) return;
         
         const startTime = new Date().toISOString();
-        const logRef = officerRef.child("dutyLogs").push({
+        // บันทึกลง dutyLogs ภายใน Users/ID/dutyLogs
+        const newLogRef = officerRef.child("dutyLogs").push();
+        
+        newLogRef.set({
             startTime: startTime,
             action: "เริ่มปฏิบัติหน้าที่ 🚨"
         });
 
         isOnDuty = true;
-        currentSessionKey = logRef.key;
+        currentSessionKey = newLogRef.key;
         localStorage.setItem("isOnDuty", "true");
         localStorage.setItem("currentSessionKey", currentSessionKey);
 
-        elements.startBtn.disabled = true;
-        elements.endBtn.disabled = false;
+        els.startBtn.disabled = true;
+        els.endBtn.disabled = false;
         playSound();
-        
-        // ส่ง Discord
-        sendToDiscord("ON DUTY");
+        sendDiscordWebhook("ON DUTY");
     };
 
     // ฟังก์ชันออกเวร
     window.endDuty = function() {
-        if (!isOnDuty) return alert("คุณยังไม่ได้เข้าเวร!");
-        
+        if(!isOnDuty) return;
+
         const endTime = new Date().toISOString();
         
+        // ไปดึง Log ตัวปัจจุบันมาคำนวณเวลา
         officerRef.child("dutyLogs/" + currentSessionKey).once("value", snap => {
             const data = snap.val();
-            let durationStr = "0 นาที";
-            
-            if (data && data.startTime) {
+            let durationStr = "ไม่ทราบเวลา";
+
+            if(data && data.startTime) {
                 const diff = new Date(endTime) - new Date(data.startTime);
-                const hrs = Math.floor(diff / 3600000);
-                const mins = Math.floor((diff % 3600000) / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-                durationStr = `${hrs} ชม. ${mins} นาที ${secs} วิ.`;
+                // แปลง ms เป็น ชม. นาที
+                const h = Math.floor(diff / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                durationStr = `${h} ชั่วโมง ${m} นาที ${s} วินาที`;
             }
 
+            // อัปเดตข้อมูลกลับไป
             officerRef.child("dutyLogs/" + currentSessionKey).update({
                 endTime: endTime,
                 duration: durationStr,
                 action: "ออกเวร ✅"
             });
 
-            // Reset สถานะ
+            // Reset
             isOnDuty = false;
             currentSessionKey = null;
             localStorage.removeItem("isOnDuty");
             localStorage.removeItem("currentSessionKey");
 
-            elements.startBtn.disabled = false;
-            elements.endBtn.disabled = true;
+            els.startBtn.disabled = false;
+            els.endBtn.disabled = true;
             playSound();
-            
-            // ส่ง Discord
-            sendToDiscord("OFF DUTY");
+            sendDiscordWebhook("OFF DUTY");
         });
     };
 
     // เชื่อมปุ่ม
-    if(elements.startBtn) elements.startBtn.onclick = window.startDuty;
-    if(elements.endBtn) elements.endBtn.onclick = window.endDuty;
+    if(els.startBtn) els.startBtn.addEventListener("click", window.startDuty);
+    if(els.endBtn) els.endBtn.addEventListener("click", window.endDuty);
 
-    // --- ส่วนแสดง Logs (Realtime) ---
-    officerRef.child("dutyLogs").limitToLast(10).on("child_added", snapshot => {
-        const val = snapshot.val();
+    // ==========================================
+    // 4. Realtime Logs (แสดงผลสด)
+    // ==========================================
+    officerRef.child("dutyLogs").limitToLast(10).on("child_added", snap => {
+        const val = snap.val();
         const li = document.createElement("li");
+        const time = new Date(val.startTime).toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
         
-        // แปลงเวลาให้สวยงาม
-        const timeStr = new Date(val.startTime).toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
+        li.innerHTML = `<span style="color:#00ccff">[${time}]</span> ${val.action} ${val.duration ? `(${val.duration})` : ''}`;
         
-        li.innerHTML = `<span style="color:#00ccff">[${timeStr}]</span> ${val.action} ${val.duration ? `(รวม: ${val.duration})` : ''}`;
-        
-        // ใส่ไว้บนสุด
-        if(elements.logs) elements.logs.prepend(li);
+        // ใส่บนสุด
+        if(els.logs) els.logs.prepend(li);
     });
 
-    // --- Helper Functions ---
+    // ==========================================
+    // Helper Functions
+    // ==========================================
     function playSound() {
-        if(elements.clickSound) elements.clickSound.play().catch(()=>{});
+        if(els.clickSound) els.clickSound.play().catch(()=>{});
     }
 
-    function updateLogo(user) {
-        if(!elements.logoRoot) return;
-        if(user.profilePicBase64) {
-             elements.logoRoot.innerHTML = `<img src="${user.profilePicBase64}" style="width:100%; height:100%; object-fit:cover;">`;
-        } else {
-             elements.logoRoot.textContent = user.name.substring(0,2).toUpperCase();
-        }
-    }
-
-    function sendToDiscord(action) {
-        // ใส่โค้ด Discord Webhook เดิมของคุณตรงนี้
-        // (ผมละไว้เพื่อไม่ให้ยาวเกินไป แต่ใส่ Logic เดิมได้เลย)
+    function sendDiscordWebhook(status) {
+        // ใส่โค้ด Webhook ตรงนี้ (ใช้ User ID ปัจจุบันส่ง)
+        // ...
     }
 
 });
