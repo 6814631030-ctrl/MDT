@@ -2,14 +2,14 @@
 
 // 1. Firebase Configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
-    authDomain: "law-enforment.firebaseapp.com",
-    databaseURL: "https://law-enforment-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    projectId: "law-enforment",
-    storageBucket: "law-enforment.firebasestorage.app",
-    messagingSenderId: "328110715362",
-    appId: "1:328110715362:web:6883f14af8be404ecf09bb",
-    measurementId: "G-1X08RZGGEF"
+  apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
+  authDomain: "law-enforment.firebaseapp.com",
+  databaseURL: "https://law-enforment-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  projectId: "law-enforment",
+  storageBucket: "law-enforment.appspot.com",
+  messagingSenderId: "328110715362",
+  appId: "1:328110715362:web:6883f14af8be404ecf09bb",
+  measurementId: "G-1X08RZGGEF"
 };
 
 // Initialize Firebase
