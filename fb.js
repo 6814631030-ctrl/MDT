@@ -77,67 +77,71 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initDutySystem(ref, els, id) {
-    // ฟังก์ชันช่วยเช็คสถานะและปรับปุ่ม (ฉบับบังคับเปลี่ยนสี)
+    // ฟังก์ชันอัปเดตหน้าจอ (ฉบับแก้ไข: บังคับคืนค่าเดิม Force Reset)
     const updateUI = () => {
-        // อ่านค่า Key จากเครื่อง
+        // 1. เช็คสถานะปัจจุบัน
         const currentSessionKey = localStorage.getItem("session_" + id);
-        // ถ้ามี Key แปลว่า "กำลังเข้าเวร" (Is On Duty)
         const isOnDuty = (currentSessionKey !== null && currentSessionKey !== "");
 
-        console.log("Duty Status:", isOnDuty); // เช็คใน Console (F12)
+        console.log("Duty Status Check:", isOnDuty); // ดู Log ว่าเป็น true/false
 
-        // --- ปรับปุ่ม Start (เข้าเวร) ---
+        // 2. จัดการปุ่ม Start (เข้าเวร)
         if(els.startBtn) {
-            els.startBtn.disabled = isOnDuty; // ปิดปุ่มทางเทคนิค
-            
-            // บังคับเปลี่ยนลักษณะทางสายตา (Visual)
             if (isOnDuty) {
-                // ถ้าเข้าเวรอยู่ -> ทำให้ปุ่มเริ่มจางลงและกดไม่ได้
-                els.startBtn.style.opacity = "0.3"; 
-                els.startBtn.style.cursor = "not-allowed";
-                els.startBtn.style.pointerEvents = "none"; // ห้ามคลิกเด็ดขาด
-                els.startBtn.style.border = "1px solid #555"; // เปลี่ยนสีขอบเป็นเทา
+                // ถ้าเข้าเวรอยู่ -> ปิดปุ่ม Start
+                els.startBtn.classList.add("disabled"); // เพิ่ม class disabled เผื่อธีมใช้
+                els.startBtn.style.opacity = "0.2";
+                els.startBtn.style.pointerEvents = "none";
+                els.startBtn.style.filter = "grayscale(100%)"; // ทำเป็นสีเทาไปเลย
+                els.startBtn.innerHTML = '<i class="fa fa-ban"></i> ON DUTY'; // เปลี่ยนข้อความ
             } else {
-                // ถ้ายังไม่เข้า -> คืนค่าเดิม
+                // ถ้าออกเวรแล้ว -> เปิดปุ่ม Start ให้สุด
+                els.startBtn.classList.remove("disabled");
                 els.startBtn.style.opacity = "1";
-                els.startBtn.style.cursor = "pointer";
                 els.startBtn.style.pointerEvents = "auto";
-                els.startBtn.style.border = ""; // คืนสีขอบเดิมของธีม
+                els.startBtn.style.filter = "none";
+                els.startBtn.style.border = "1px solid #00ff00"; // บังคับขอบเขียว
+                els.startBtn.style.color = "#00ff00"; // บังคับตัวหนังสือเขียว
+                els.startBtn.innerHTML = '🚨 ON DUTY / เริ่มงาน'; // คืนข้อความเดิม
             }
         }
 
-        // --- ปรับปุ่ม End (ออกเวร) ---
+        // 3. จัดการปุ่ม End (ออกเวร)
         if(els.endBtn) {
-            els.endBtn.disabled = !isOnDuty; 
-            
             if (!isOnDuty) {
-                // ถ้ายังไม่เข้าเวร -> ปุ่มออกต้องจาง
-                els.endBtn.style.opacity = "0.3";
-                els.endBtn.style.cursor = "not-allowed";
+                // ถ้าออกเวรแล้ว -> ปิดปุ่ม End
+                els.endBtn.classList.add("disabled");
+                els.endBtn.style.opacity = "0.2";
                 els.endBtn.style.pointerEvents = "none";
+                els.endBtn.style.filter = "grayscale(100%)";
                 els.endBtn.style.border = "1px solid #555";
             } else {
-                // ถ้าเข้าเวรแล้ว -> ปุ่มออกต้องชัดและกดได้
+                // ถ้าเข้าเวรอยู่ -> เปิดปุ่ม End ให้ชัดๆ
+                els.endBtn.classList.remove("disabled");
                 els.endBtn.style.opacity = "1";
-                els.endBtn.style.cursor = "pointer";
                 els.endBtn.style.pointerEvents = "auto";
-                els.endBtn.style.border = ""; // คืนสีขอบเดิม (แดง/ธีม)
+                els.endBtn.style.filter = "none";
+                els.endBtn.style.border = "1px solid #ff0000"; // บังคับขอบแดง
+                els.endBtn.style.color = "#ff0000"; // บังคับตัวหนังสือแดง
             }
         }
 
-        // --- ส่วนแสดงเวลา (เหมือนเดิม) ---
+        // 4. จัดการเวลา Session Start
         const storedStartTime = localStorage.getItem("dutyStartTime_" + id);
         if (storedStartTime && els.time) {
             const dateObj = new Date(storedStartTime);
             els.time.textContent = `${dateObj.toLocaleTimeString('th-TH')} (${dateObj.toLocaleDateString('th-TH')})`;
-        } else if (els.time && !isOnDuty) {
-            els.time.textContent = "--:--:--";
+            els.time.style.color = "#00ff00"; // สีเขียวตอนทำงาน
+        } else if (els.time) {
+            els.time.textContent = "--:--:--"; // รีเซ็ตเวลา
+            els.time.style.color = "#aaa"; // สีเทาตอนพัก
         }
     };
 
-// ... (ส่วน Log ด้านล่างใช้โค้ดเดิมได้เลย)
-
+    // เรียกใช้ครั้งแรกเพื่อปรับปุ่มตามสถานะจริง
     updateUI();
+
+    // --- ส่วนของ Event Listener (เหมือนเดิม แต่เรียก updateUI ให้ชัวร์ขึ้น) ---
 
     // ปุ่ม Start
     if(els.startBtn) {
@@ -149,12 +153,20 @@ function initDutySystem(ref, els, id) {
             const now = new Date();
             const timeStr = now.toISOString();
             
+            // เล่นเสียงก่อน
+            if(els.clickSound) els.clickSound.currentTime = 0;
+            if(els.clickSound) els.clickSound.play().catch(()=>{});
+
             const newRef = ref.child("dutyLogs").push();
             newRef.set({ startTime: timeStr, action: "เข้าเวรปฏิบัติหน้าที่ 🚨" }).then(() => {
                 localStorage.setItem("session_" + id, newRef.key);
                 localStorage.setItem("dutyStartTime_" + id, timeStr);
-                updateUI();
-                if(els.clickSound) els.clickSound.play().catch(()=>{});
+                
+                // อัปเดต UI ทันที
+                updateUI(); 
+                
+                // บังคับโหลด ck.js ใหม่เบาๆ (ถ้าจำเป็น)
+                if(typeof updateDutyTimer === "function") updateDutyTimer();
             });
         });
     }
@@ -169,15 +181,27 @@ function initDutySystem(ref, els, id) {
             const now = new Date().toISOString();
             const currentSessionKey = localStorage.getItem("session_" + id);
             
+            // เล่นเสียง
+            if(els.clickSound) els.clickSound.currentTime = 0;
+            if(els.clickSound) els.clickSound.play().catch(()=>{});
+
             if(currentSessionKey) {
-                ref.child("dutyLogs/" + currentSessionKey).update({ endTime: now, action: "ออกเวร ✅" }).then(() => {
+                ref.child("dutyLogs/" + currentSessionKey).update({ endTime: now, action: "ออกเวร / จบการทำงาน ✅" }).then(() => {
+                    // เคลียร์ค่า
                     localStorage.removeItem("session_" + id);
                     localStorage.removeItem("dutyStartTime_" + id);
+                    
+                    // อัปเดต UI ทันที
                     updateUI();
-                    if(els.clickSound) els.clickSound.play().catch(()=>{});
+                    
+                    // บังคับ ck.js ให้หยุดนับทันที
+                    if(typeof updateDutyTimer === "function") updateDutyTimer();
+                    
+                    // *** ถ้า UI ยังดื้อไม่ยอมเปลี่ยน ให้ใช้ท่าไม้ตายนี้ (เอา Comment ออกถ้าจำเป็น) ***
+                    // setTimeout(() => window.location.reload(), 500); 
                 });
             } else {
-                // บังคับ Reset ถ้าหาคีย์ไม่เจอ
+                // กรณีฉุกเฉิน หาคีย์ไม่เจอ ก็บังคับ Reset
                 localStorage.removeItem("session_" + id);
                 localStorage.removeItem("dutyStartTime_" + id);
                 updateUI();
@@ -185,22 +209,22 @@ function initDutySystem(ref, els, id) {
         });
     }
 
-    // Realtime Logs
+    // Realtime Logs (ส่วนแสดงผล Log)
     ref.child("dutyLogs").off(); 
     ref.child("dutyLogs").limitToLast(10).on("child_added", snap => {
         if(els.logs && !document.getElementById(snap.key)) {
             const val = snap.val();
             const li = document.createElement("li");
             li.id = snap.key;
+            
             const timeObj = new Date(val.startTime);
             const timeStr = timeObj.toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
             
-            let color = "#00ccff";
-            if(val.action.includes("ออก")) color = "#ff3333";
-            if(val.action.includes("เข้า")) color = "#00ff00";
+            let color = "#00ccff"; // สีฟ้า (เข้า)
+            if(val.action && val.action.includes("ออก")) color = "#ff3333"; // สีแดง (ออก)
 
             li.innerHTML = `<span style="color:${color}">[${timeStr}]</span> ${val.action}`;
-            els.logs.prepend(li);
+            els.logs.prepend(li); // ใส่ไว้บนสุด
         }
     });
 }
