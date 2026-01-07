@@ -1,4 +1,4 @@
-// ====== fb.js (Logic บันทึกเวลาและการกดปุ่ม) ======
+// ====== fb.js (Calculates Total History Time) ======
 const firebaseConfig = {
     apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
     authDomain: "law-enforment.firebaseapp.com",
@@ -23,12 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const officerRef = db.ref("Users/" + currentId);
     
-    // Elements
+    // Elements Reference
     const els = {
         userInfo: document.getElementById("userInfo"), 
         currentOfficer: document.getElementById("currentOfficer"),
         info: document.getElementById("info"),
-        time: document.getElementById("time"), // ช่อง Session Start
+        time: document.getElementById("time"),
         logoRoot: document.getElementById("logoRoot"),
         startBtn: document.getElementById("startDuty"),
         endBtn: document.getElementById("endDuty"),
@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     officerRef.on("value", snapshot => {
         const user = snapshot.val();
         if (user) {
+            // 1. แสดงข้อมูลพื้นฐาน
             const name = user.name || "Unknown";
             const rank = user.rank || "Officer";
             
@@ -46,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if(els.info) els.info.textContent = `${rank} ${name}`;
             if(els.userInfo) els.userInfo.textContent = `${rank} | ${user.callsign || '-'} | ID: ${currentId}`;
             
-            // แสดงรูปภาพ
             if(els.logoRoot) {
                 if (user.profilePicBase64 && user.profilePicBase64.length > 50) {
                     els.logoRoot.innerHTML = `<img src="${user.profilePicBase64}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -54,108 +54,118 @@ document.addEventListener("DOMContentLoaded", () => {
                     els.logoRoot.textContent = name.substring(0,2).toUpperCase();
                 }
             }
-            
+
+            // 2. *** คำนวณเวลารวมทั้งหมดจาก Logs ในอดีต ***
+            let totalPastMilliseconds = 0;
+            if (user.dutyLogs) {
+                Object.values(user.dutyLogs).forEach(log => {
+                    // เอาเฉพาะ Log ที่จบไปแล้ว (มีทั้ง startTime และ endTime)
+                    if (log.startTime && log.endTime) {
+                        const start = new Date(log.startTime).getTime();
+                        const end = new Date(log.endTime).getTime();
+                        totalPastMilliseconds += (end - start);
+                    }
+                });
+            }
+            // บันทึกเวลาอดีตลงเครื่อง เพื่อให้ ck.js เอาไปบวกต่อ
+            localStorage.setItem("totalPastTime_" + currentId, totalPastMilliseconds);
+
+            // 3. เริ่มระบบปุ่ม
             initDutySystem(officerRef, els, currentId);
         }
     });
 });
 
-// ====== fb.js (ส่วนฟังก์ชัน initDutySystem ที่แก้ไขแล้ว) ======
-
 function initDutySystem(ref, els, id) {
-    // ฟังก์ชันช่วยเช็คสถานะและปรับปุ่ม
     const updateUI = () => {
-        // อ่านค่าสดๆ จาก LocalStorage ทุกครั้งที่อัปเดตปุ่ม
-        const isOnDuty = localStorage.getItem("isOnDuty_" + id) === "true";
+        const currentSessionKey = localStorage.getItem("session_" + id);
+        const isOnDuty = (currentSessionKey !== null && currentSessionKey !== "");
         const storedStartTime = localStorage.getItem("dutyStartTime_" + id);
 
-        if(els.startBtn) els.startBtn.disabled = isOnDuty; // ถ้าเข้าเวรอยู่ -> ห้ามกดเริ่ม
-        if(els.endBtn) els.endBtn.disabled = !isOnDuty;    // ถ้าเข้าเวรอยู่ -> ให้กดออกได้
+        // ปรับสถานะปุ่ม
+        if(els.startBtn) {
+            els.startBtn.disabled = isOnDuty;
+            els.startBtn.style.opacity = isOnDuty ? "0.3" : "1";
+            els.startBtn.style.cursor = isOnDuty ? "not-allowed" : "pointer";
+        }
+        if(els.endBtn) {
+            els.endBtn.disabled = !isOnDuty;
+            els.endBtn.style.opacity = !isOnDuty ? "0.3" : "1";
+            els.endBtn.style.cursor = !isOnDuty ? "not-allowed" : "pointer";
+        }
 
         // แสดงเวลาเริ่มงาน
         if (storedStartTime && els.time) {
             const dateObj = new Date(storedStartTime);
             els.time.textContent = `${dateObj.toLocaleTimeString('th-TH')} (${dateObj.toLocaleDateString('th-TH')})`;
-        } else if (els.time) {
+        } else if (els.time && !isOnDuty) {
             els.time.textContent = "--:--:--";
         }
     };
 
-    // เรียกทำงานครั้งแรกเพื่อจัดหน้าตาปุ่ม
     updateUI();
 
-    // --- ส่วนที่ 1: กดปุ่มเข้าเวร (Start Duty) ---
+    // ปุ่ม Start
     if(els.startBtn) {
-        // ลบ Event Listener เก่าออกก่อน (กันกดเบิ้ล)
         const newStartBtn = els.startBtn.cloneNode(true);
         els.startBtn.parentNode.replaceChild(newStartBtn, els.startBtn);
-        els.startBtn = newStartBtn; // อัปเดต reference
-
+        els.startBtn = newStartBtn;
+        
         els.startBtn.addEventListener("click", () => {
             const now = new Date();
             const timeStr = now.toISOString();
-
-            // ส่งข้อมูลขึ้น Firebase
+            
             const newRef = ref.child("dutyLogs").push();
-            newRef.set({ 
-                startTime: timeStr, 
-                action: "เข้าเวรปฏิบัติหน้าที่ 🚨" 
-            }).then(() => {
-                // บันทึก Key และสถานะลงเครื่อง
-                localStorage.setItem("isOnDuty_" + id, "true");
-                localStorage.setItem("session_" + id, newRef.key); // จำ Key ไว้ใช้ตอนออก
+            newRef.set({ startTime: timeStr, action: "เข้าเวรปฏิบัติหน้าที่ 🚨" }).then(() => {
+                localStorage.setItem("session_" + id, newRef.key);
                 localStorage.setItem("dutyStartTime_" + id, timeStr);
-                
-                updateUI(); // อัปเดตปุ่มทันที
+                updateUI();
                 if(els.clickSound) els.clickSound.play().catch(()=>{});
-            }).catch(err => alert("Error Start: " + err.message));
+            });
         });
     }
 
-    // --- ส่วนที่ 2: กดปุ่มออกเวร (End Duty) ---
+    // ปุ่ม End
     if(els.endBtn) {
-        // ลบ Event Listener เก่าออกก่อน
         const newEndBtn = els.endBtn.cloneNode(true);
         els.endBtn.parentNode.replaceChild(newEndBtn, els.endBtn);
-        els.endBtn = newEndBtn; // อัปเดต reference
+        els.endBtn = newEndBtn;
 
         els.endBtn.addEventListener("click", () => {
             const now = new Date().toISOString();
-            
-            // *** จุดสำคัญที่แก้: ดึง Key จาก LocalStorage โดยตรง ***
             const currentSessionKey = localStorage.getItem("session_" + id);
-
+            
             if(currentSessionKey) {
-                // อัปเดตเวลาออกที่ Key นั้น
-                ref.child("dutyLogs/" + currentSessionKey).update({ 
-                    endTime: now, 
-                    action: "ออกเวร / จบการทำงาน ✅" 
-                }).then(() => {
-                    // เคลียร์ค่าในเครื่อง
-                    localStorage.removeItem("isOnDuty_" + id);
+                ref.child("dutyLogs/" + currentSessionKey).update({ endTime: now, action: "ออกเวร ✅" }).then(() => {
                     localStorage.removeItem("session_" + id);
                     localStorage.removeItem("dutyStartTime_" + id);
-                    
-                    updateUI(); // อัปเดตปุ่มทันที
+                    updateUI();
                     if(els.clickSound) els.clickSound.play().catch(()=>{});
-                }).catch(err => alert("Error End: " + err.message));
+                });
             } else {
-                // กรณีฉุกเฉิน: หา Key ไม่เจอ (แต่ปุ่มดันกดได้) ให้บังคับ Reset
-                alert("ไม่พบ Session เก่า - ทำการรีเซ็ตระบบ");
-                localStorage.removeItem("isOnDuty_" + id);
+                // บังคับ Reset ถ้าหาคีย์ไม่เจอ
+                localStorage.removeItem("session_" + id);
+                localStorage.removeItem("dutyStartTime_" + id);
                 updateUI();
             }
         });
     }
 
-    // --- ส่วนที่ 3: Realtime Logs (ไม่แก้) ---
+    // Realtime Logs
+    ref.child("dutyLogs").off(); 
     ref.child("dutyLogs").limitToLast(10).on("child_added", snap => {
         if(els.logs && !document.getElementById(snap.key)) {
             const val = snap.val();
             const li = document.createElement("li");
             li.id = snap.key;
-            const time = new Date(val.startTime).toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
-            li.innerHTML = `<span style="color:#00ccff">[${time}]</span> ${val.action}`;
+            const timeObj = new Date(val.startTime);
+            const timeStr = timeObj.toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
+            
+            let color = "#00ccff";
+            if(val.action.includes("ออก")) color = "#ff3333";
+            if(val.action.includes("เข้า")) color = "#00ff00";
+
+            li.innerHTML = `<span style="color:${color}">[${timeStr}]</span> ${val.action}`;
             els.logs.prepend(li);
         }
     });
