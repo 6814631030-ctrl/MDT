@@ -194,79 +194,108 @@ input {
 }
 
 /* --- PANIC MODAL STYLES --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.9); /* พื้นหลังดำโปร่งแสง */
-    z-index: 9999;
-    display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(5px);
-}
 
-.modal-content {
-    background: #050505;
-    border: 2px solid #ff0000; /* ขอบแดง */
-    box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); /* เรืองแสงแดง */
-    width: 500px;
-    padding: 20px;
-    font-family: 'Chakra Petch', sans-serif;
-    position: relative;
-    animation: fadeIn 0.3s ease-in-out;
-}
+  /* Header ของกล่อง Login */
+    .login-header {
+      background: #003366;
+      color: white;
+      padding: 10px 15px;
+      text-align: left;
+      border-bottom: 1px solid #00ccff;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .login-header span.indicator {
+      width: 8px;
+      height: 8px;
+      background-color: #0f0;
+      display: inline-block;
+      border-radius: 50%;
+      margin-right: 8px;
+      box-shadow: 0 0 5px #0f0;
+    }
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    /* Input Fields */
+    .input-group {
+      margin: 15px 0;
+      text-align: left;
+    }
 
-.modal-header h3 {
-    color: #ff0000;
-    text-align: center;
-    border-bottom: 1px solid #ff3333;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-    text-shadow: 0 0 10px #ff0000;
-}
+    .input-group label {
+      color: #00ccff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 5px;
+      display: block;
+    }
 
-.modal-body label {
-    color: #fff; display: block; margin-bottom: 5px; font-size: 14px;
-}
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      background: #000;
+      border: 1px solid #005580;
+      color: #00ff00;
+      font-size: 16px;
+      border-radius: 0;
+      outline: none;
+      transition: 0.3s;
+    }
 
-.modal-input {
-    width: 100%;
-    background: #000;
-    border: 1px solid #444;
-    color: #e0f7fa;
-    padding: 10px;
-    margin-bottom: 15px;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 14px;
-    outline: none;
-}
-.modal-input:focus { border-color: #ff0000; }
+    .input-group input:focus {
+      border-color: #00ccff;
+      box-shadow: 0 0 8px rgba(0, 204, 255, 0.5);
+    }
 
-/* ปรับแต่ง Select ให้ดูดี */
-#panicSituation option, #panicUnit option {
-    padding: 8px; cursor: pointer; border-bottom: 1px solid #222;
-}
-#panicSituation option:checked, #panicUnit option:checked {
-    background: #ff0000; color: #fff;
-}
+    .input-group input::placeholder {
+      color: #004466;
+      font-size: 14px;
+    }
 
-.modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+    /* Button */
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #004080;
+      color: #00ccff;
+      font-size: 18px;
+      border: 1px solid #00ccff;
+      border-radius: 0;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
 
-.btn-modal-next, .btn-modal-confirm {
-    width: 100%; padding: 10px;
-    background: #330000; border: 1px solid #ff0000; color: #ff0000;
-    font-weight: bold; cursor: pointer; transition: 0.3s;
-}
-.btn-modal-next:hover, .btn-modal-confirm:hover {
-    background: #ff0000; color: #fff; box-shadow: 0 0 15px #ff0000;
-}
+    button:hover {
+      background: #00ccff;
+      color: #000;
+      box-shadow: 0 0 15px #00ccff;
+    }
 
-.btn-modal-back {
-    width: 30%; padding: 10px;
-    background: transparent; border: 1px solid #555; color: #aaa; cursor: pointer;
-}
-.btn-modal-back:hover { border-color: #fff; color: #fff; }
+    .error {
+      color: #ff3333;
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-.btn-close-modal {
-    position: absolute; top: 10px; right: 15px;
-    background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;
-}
+    .footer-text {
+      margin-top: 25px;
+      font-size: 10px;
+      color: #555;
+    }
+
+    .contact-link {
+        color: #667788;
+        font-size: 12px;
+        margin-top: 15px;
+        display: block;
+        text-decoration: none;
+        transition: 0.3s;
+    }
+    .contact-link:hover {
+        color: #00ccff;
+        text-decoration: underline;
+    }
