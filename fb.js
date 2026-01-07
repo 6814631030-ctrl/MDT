@@ -77,24 +77,56 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initDutySystem(ref, els, id) {
+    // ฟังก์ชันช่วยเช็คสถานะและปรับปุ่ม (ฉบับบังคับเปลี่ยนสี)
     const updateUI = () => {
+        // อ่านค่า Key จากเครื่อง
         const currentSessionKey = localStorage.getItem("session_" + id);
+        // ถ้ามี Key แปลว่า "กำลังเข้าเวร" (Is On Duty)
         const isOnDuty = (currentSessionKey !== null && currentSessionKey !== "");
-        const storedStartTime = localStorage.getItem("dutyStartTime_" + id);
 
-        // ปรับสถานะปุ่ม
+        console.log("Duty Status:", isOnDuty); // เช็คใน Console (F12)
+
+        // --- ปรับปุ่ม Start (เข้าเวร) ---
         if(els.startBtn) {
-            els.startBtn.disabled = isOnDuty;
-            els.startBtn.style.opacity = isOnDuty ? "0.3" : "1";
-            els.startBtn.style.cursor = isOnDuty ? "not-allowed" : "pointer";
-        }
-        if(els.endBtn) {
-            els.endBtn.disabled = !isOnDuty;
-            els.endBtn.style.opacity = !isOnDuty ? "0.3" : "1";
-            els.endBtn.style.cursor = !isOnDuty ? "not-allowed" : "pointer";
+            els.startBtn.disabled = isOnDuty; // ปิดปุ่มทางเทคนิค
+            
+            // บังคับเปลี่ยนลักษณะทางสายตา (Visual)
+            if (isOnDuty) {
+                // ถ้าเข้าเวรอยู่ -> ทำให้ปุ่มเริ่มจางลงและกดไม่ได้
+                els.startBtn.style.opacity = "0.3"; 
+                els.startBtn.style.cursor = "not-allowed";
+                els.startBtn.style.pointerEvents = "none"; // ห้ามคลิกเด็ดขาด
+                els.startBtn.style.border = "1px solid #555"; // เปลี่ยนสีขอบเป็นเทา
+            } else {
+                // ถ้ายังไม่เข้า -> คืนค่าเดิม
+                els.startBtn.style.opacity = "1";
+                els.startBtn.style.cursor = "pointer";
+                els.startBtn.style.pointerEvents = "auto";
+                els.startBtn.style.border = ""; // คืนสีขอบเดิมของธีม
+            }
         }
 
-        // แสดงเวลาเริ่มงาน
+        // --- ปรับปุ่ม End (ออกเวร) ---
+        if(els.endBtn) {
+            els.endBtn.disabled = !isOnDuty; 
+            
+            if (!isOnDuty) {
+                // ถ้ายังไม่เข้าเวร -> ปุ่มออกต้องจาง
+                els.endBtn.style.opacity = "0.3";
+                els.endBtn.style.cursor = "not-allowed";
+                els.endBtn.style.pointerEvents = "none";
+                els.endBtn.style.border = "1px solid #555";
+            } else {
+                // ถ้าเข้าเวรแล้ว -> ปุ่มออกต้องชัดและกดได้
+                els.endBtn.style.opacity = "1";
+                els.endBtn.style.cursor = "pointer";
+                els.endBtn.style.pointerEvents = "auto";
+                els.endBtn.style.border = ""; // คืนสีขอบเดิม (แดง/ธีม)
+            }
+        }
+
+        // --- ส่วนแสดงเวลา (เหมือนเดิม) ---
+        const storedStartTime = localStorage.getItem("dutyStartTime_" + id);
         if (storedStartTime && els.time) {
             const dateObj = new Date(storedStartTime);
             els.time.textContent = `${dateObj.toLocaleTimeString('th-TH')} (${dateObj.toLocaleDateString('th-TH')})`;
@@ -102,6 +134,8 @@ function initDutySystem(ref, els, id) {
             els.time.textContent = "--:--:--";
         }
     };
+
+// ... (ส่วน Log ด้านล่างใช้โค้ดเดิมได้เลย)
 
     updateUI();
 
