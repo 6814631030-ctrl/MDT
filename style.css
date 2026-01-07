@@ -1,0 +1,157 @@
+/* 🌟 Reset และ font */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
+
+.login-container {
+  background: rgba(255,255,255,0.95);
+  color: #333;
+  padding: 30px 40px;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-container .logo {
+  display: block;
+  margin: 0 auto 20px;
+  width: 120px;
+  height: auto;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+h1 {
+  font-size: 1.8rem;
+  margin-bottom: 10px;
+  color: #1f2937;
+}
+
+.subtitle, #info, #time {
+  font-size: 0.95rem;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+/* ปุ่ม */
+button {
+  padding: 12px 25px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  width: 100%;
+}
+
+#startDuty {
+  background-color: #ef4444; /* 🔴 สีแดง */
+  color: #fff;
+}
+
+#startDuty:hover:not(:disabled) {
+  background-color: #dc2626;
+  transform: scale(1.05);
+}
+
+#endDuty {
+  background-color: #10b981; /* 🟢 สีเขียว */
+  color: #fff;
+}
+
+#endDuty:hover:not(:disabled) {
+  background-color: #059669;
+  transform: scale(1.05);
+}
+
+button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Log Realtime */
+h2 {
+  margin-top: 25px;
+  margin-bottom: 15px;
+  color: #1f2937;
+  font-size: 1.3rem;
+}
+
+#logs {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-left: 0;
+  list-style: none;
+  text-align: left;
+}
+
+#logs li {
+  background: #f3f4f6;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* scrollbar แบบสวย */
+#logs::-webkit-scrollbar {
+  width: 8px;
+}
+
+#logs::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+#logs::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+
+/* Input group (ถ้าต้องการเพิ่มฟอร์ม) */
+.input-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+label {
+  font-size: 14px;
+  color: #333;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.sidebar .logo {
+  width: 60px;
+  margin-bottom: 10px;
+}
+
+
+
