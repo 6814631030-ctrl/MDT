@@ -262,6 +262,7 @@
     #logs li:first-child { border-left-color: #0f0; background: rgba(0, 255, 0, 0.1); }
 </style>
 </head>
+
 <body>
 
 <audio id="clickSound" src="click.mp3" preload="auto"></audio>
@@ -291,6 +292,7 @@
         <button class="btn-header btn-admin" ><b> Panic Button / ปุ่มฉุกเฉิน</b></button>
         <button class="btn-header btn-exit" onclick="window.location.href='index.html'">🔴 LOGOUT / ออกจากระบบ</button>
     </div>
+    
 </header>
 
 <main>
@@ -342,6 +344,41 @@
         </div>
     </section>
 </main>
+
+<audio id="panicSound" src="PanicButton.mp3" preload="auto"></audio>
+
+<div id="panicModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>🚨 PANIC BUTTON ACTIVATION / เปิดใช้งานปุ่มฉุกเฉิน</h3>
+        </div>
+        <div class="modal-body">
+            <div id="step1">
+                <label>SITUATION / สถานการณ์:</label>
+                <select id="panicSituation" class="modal-input" size="5">
+                    </select>
+                <button class="btn-modal-next" onclick="nextPanicStep(2)">NEXT / ถัดไป</button>
+            </div>
+
+            <div id="step2" style="display: none;">
+                <label>UNIT REQUEST / ต้องการกำลังเสริมจาก:</label>
+                <select id="panicUnit" class="modal-input" size="2">
+                    <option value="SAHP" data-role="&1296713121204797450">Station Patrol Unit (SAHP)</option>
+                    <option value="SWAT" data-role="&1156904628726808602">SWAT Team (SWAT)</option>
+                </select>
+
+                <label style="margin-top:10px;">LOCATION / สถานที่เกิดเหตุ:</label>
+                <input type="text" id="panicLocation" class="modal-input" placeholder="ระบุสถานที่ (เช่น Hawick Avenue)...">
+                
+                <div class="modal-actions">
+                    <button class="btn-modal-back" onclick="nextPanicStep(1)">BACK</button>
+                    <button class="btn-modal-confirm" onclick="confirmPanic()">CONFIRM / ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+        <button class="btn-close-modal" onclick="closePanicModal()">X</button>
+    </div>
+</div>
 
 <script>
     // Script เดิมสำหรับ Logic เสียงและการแสดงปุ่ม Admin
