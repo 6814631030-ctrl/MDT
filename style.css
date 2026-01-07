@@ -196,46 +196,77 @@ input {
 /* --- PANIC MODAL STYLES --- */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9); /* พื้นหลังดำโปร่งแสง */
     z-index: 9999;
     display: flex; align-items: center; justify-content: center;
     backdrop-filter: blur(5px);
 }
+
 .modal-content {
-    background: #0a0a0a;
-    border: 2px solid #ff0000;
+    background: #050505;
+    border: 2px solid #ff0000; /* ขอบแดง */
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.4); /* เรืองแสงแดง */
     width: 500px;
     padding: 20px;
-    box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
-    position: relative;
     font-family: 'Chakra Petch', sans-serif;
+    position: relative;
+    animation: fadeIn 0.3s ease-in-out;
 }
+
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
 .modal-header h3 {
-    color: #ff0000; border-bottom: 1px solid #ff3333;
-    padding-bottom: 10px; margin-bottom: 20px; text-align: center;
+    color: #ff0000;
+    text-align: center;
+    border-bottom: 1px solid #ff3333;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
     text-shadow: 0 0 10px #ff0000;
 }
-.modal-input {
-    width: 100%; background: #000; color: #fff;
-    border: 1px solid #333; padding: 10px; margin-bottom: 10px;
-    font-family: 'Share Tech Mono', monospace; font-size: 14px;
+
+.modal-body label {
+    color: #fff; display: block; margin-bottom: 5px; font-size: 14px;
 }
-.modal-input:focus { border-color: #ff0000; outline: none; }
-.modal-input option { padding: 5px; cursor: pointer; }
-.modal-input option:checked { background: #ff0000; color: #fff; }
+
+.modal-input {
+    width: 100%;
+    background: #000;
+    border: 1px solid #444;
+    color: #e0f7fa;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    outline: none;
+}
+.modal-input:focus { border-color: #ff0000; }
+
+/* ปรับแต่ง Select ให้ดูดี */
+#panicSituation option, #panicUnit option {
+    padding: 8px; cursor: pointer; border-bottom: 1px solid #222;
+}
+#panicSituation option:checked, #panicUnit option:checked {
+    background: #ff0000; color: #fff;
+}
+
+.modal-actions { display: flex; gap: 10px; margin-top: 10px; }
 
 .btn-modal-next, .btn-modal-confirm {
-    width: 100%; padding: 10px; background: #330000; color: #ff0000;
-    border: 1px solid #ff0000; cursor: pointer; font-weight: bold; margin-top: 10px;
+    width: 100%; padding: 10px;
+    background: #330000; border: 1px solid #ff0000; color: #ff0000;
+    font-weight: bold; cursor: pointer; transition: 0.3s;
 }
 .btn-modal-next:hover, .btn-modal-confirm:hover {
     background: #ff0000; color: #fff; box-shadow: 0 0 15px #ff0000;
 }
+
 .btn-modal-back {
-    padding: 10px; background: transparent; color: #aaa; border: 1px solid #555; cursor: pointer; width: 30%;
+    width: 30%; padding: 10px;
+    background: transparent; border: 1px solid #555; color: #aaa; cursor: pointer;
 }
-.modal-actions { display: flex; gap: 10px; }
+.btn-modal-back:hover { border-color: #fff; color: #fff; }
+
 .btn-close-modal {
-    position: absolute; top: 10px; right: 15px; background: none; border: none;
-    color: #fff; font-size: 20px; cursor: pointer;
+    position: absolute; top: 10px; right: 15px;
+    background: none; border: none; color: #fff; font-size: 20px; cursor: pointer;
 }
