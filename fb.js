@@ -1,5 +1,6 @@
-// ====== fb.js (With ERROR 404) ======
+// ====== fb.js (ฉบับสมบูรณ์: มีระบบ Loading และ Error Handling) ======
 
+// 1. Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAeHBUh7RLABVIy9exDytaX9_9MHiSWY3A",
     authDomain: "law-enforment.firebaseapp.com",
@@ -11,6 +12,7 @@ const firebaseConfig = {
     measurementId: "G-1X08RZGGEF"
 };
 
+// Initialize Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -18,23 +20,32 @@ const db = firebase.database();
 
 document.addEventListener("DOMContentLoaded", () => {
     
-    // 1. ตรวจสอบ ID
+    // ============================================
+    // STEP 1: ตรวจสอบ ID (สำคัญที่สุด)
+    // ============================================
     let currentId = localStorage.getItem("officerId");
 
-    // ถ้าไม่มี ID ให้ลองถามดู (Debug Mode)
+    // [DEBUG] ถ้าไม่มี ID ให้ถาม (สำหรับทดสอบ)
     if (!currentId) {
-        currentId = prompt("System Debug: กรุณากรอก Officer ID (เช่น 1, 14002):");
+        // ลองหา Default ID เช่น 14002 หรือ 1
+        currentId = prompt("System Debug: กรุณากรอก Officer ID (เช่น 1, 301, 14002):", "14002");
+        if (currentId) {
+            localStorage.setItem("officerId", currentId);
+        } else {
+            // ถ้าไม่กรอกอะไรเลย -> เรียกหน้าจอ ERROR 404
+            showFatalError("MISSING IDENTIFICATION / ไม่พบข้อมูลระบุตัวตน");
+            return; // หยุดการทำงานทันที
+        }
     }
 
-    // ถ้ายังไม่มี ID อีก -> เรียก Error 404 ทันที
-    if (!currentId) {
-        showFatalError("NO IDENTIFICATION FOUND / ไม่พบข้อมูลการยืนยันตัวตน");
-        return; 
-    }
+    console.log("System Start. Target ID:", currentId);
 
-    const userPath = "Users/" + currentId;
-    const officerRef = db.ref(userPath);
-
+    // ============================================
+    // STEP 2: เตรียมการเชื่อมต่อ
+    // ============================================
+    const officerRef = db.ref("Users/" + currentId);
+    
+    // อ้างอิง HTML Elements
     const els = {
         userInfo: document.getElementById("userInfo"), 
         currentOfficer: document.getElementById("currentOfficer"),
@@ -43,139 +54,183 @@ document.addEventListener("DOMContentLoaded", () => {
         logoRoot: document.getElementById("logoRoot"),
         startBtn: document.getElementById("startDuty"),
         endBtn: document.getElementById("endDuty"),
-        callsignInput: document.getElementById("callsignInput"),
-        updateBtn: document.getElementById("updateCallsignBtn"),
-        logs: document.getElementById("logs")
+        logs: document.getElementById("logs"),
+        clickSound: document.getElementById("clickSound")
     };
 
-    // 2. ดึงข้อมูล User
-    officerRef.once("value").then(snapshot => {
-        const user = snapshot.val();
-        
-        if (user) {
-            // --- เจอข้อมูล (ทำงานปกติ) ---
-            localStorage.setItem("name", user.name || "");
-            localStorage.setItem("rank", user.rank || "");
-            localStorage.setItem("badgeId", user.badgeId || user.officerId);
-            localStorage.setItem("callsign", user.callsign || "");
+    // แสดงสถานะกำลังโหลด (เปลี่ยนข้อความระหว่างรอ)
+    if(els.currentOfficer) els.currentOfficer.textContent = "Connecting to Database...";
 
-            if(els.currentOfficer) els.currentOfficer.textContent = user.name || "Unknown";
+    // ============================================
+    // STEP 3: ดึงข้อมูล (Main Logic)
+    // ============================================
+    officerRef.once("value")
+        .then(snapshot => {
+            // ตรวจสอบว่ามีข้อมูลจริงไหม?
+            if (!snapshot.exists()) {
+                throw new Error("USER_NOT_FOUND"); // โยนไปเข้า catch ด้านล่าง
+            }
+
+            const user = snapshot.val();
+            console.log("Data Loaded:", user);
+
+            // --- 3.1 บันทึกข้อมูลลง LocalStorage ---
+            localStorage.setItem("name", user.name || "Unknown");
+            localStorage.setItem("rank", user.rank || "Officer");
+            localStorage.setItem("badgeId", user.badgeId || currentId);
+
+            // --- 3.2 แสดงผลหน้าจอ (Render UI) ---
+            const displayName = user.name || "Unknown Officer";
+            const displayRank = user.rank || "Officer";
+            const displayCallsign = user.callsign || "NO-CODE";
+            const displayId = user.badgeId || user.officerId || currentId;
+
+            if(els.currentOfficer) els.currentOfficer.textContent = displayName;
             
-            const idShow = user.officerId || user.badgeId || currentId;
-            if(els.userInfo) els.userInfo.textContent = `${user.rank || ''} | ${user.callsign || ''} | ID: ${idShow}`;
-            if(els.info) els.info.textContent = user.name;
-            if(els.time) els.time.textContent = user.loginTime || "N/A";
+            if(els.userInfo) {
+                els.userInfo.innerHTML = `<span style="color:#00ff00">${displayRank}</span> | ${displayCallsign} | ID: ${displayId}`;
+            }
 
+            if(els.info) els.info.textContent = `${displayRank} ${displayName}`;
+            
+            // เวลา Login
+            if(els.time) els.time.textContent = user.loginTime || new Date().toLocaleString('th-TH');
+
+            // รูปภาพ
             if(els.logoRoot) {
                 if (user.profilePicBase64 && user.profilePicBase64.length > 50) {
                     els.logoRoot.innerHTML = `<img src="${user.profilePicBase64}" style="width:100%; height:100%; object-fit:cover;">`;
                 } else {
-                    els.logoRoot.textContent = (user.name || "SP").substring(0, 2).toUpperCase();
+                    els.logoRoot.textContent = displayName.substring(0,2).toUpperCase();
                 }
             }
 
-            // โหลดระบบ Duty ต่อ
+            // --- 3.3 เริ่มระบบ Duty ---
             initDutySystem(officerRef, els);
 
-        } else {
-            // --- ไม่เจอข้อมูลใน Database -> เรียก Error 404 ---
-            showFatalError("DATA NOT FOUND IN DATABASE / ไม่พบข้อมูลในระบบ");
-        }
-    }).catch(err => {
-        // --- เกิดข้อผิดพลาดการเชื่อมต่อ -> เรียก Error 404 ---
-        console.error(err);
-        showFatalError("CONNECTION FAILED / การเชื่อมต่อล้มเหลว");
-    });
+        })
+        .catch(error => {
+            console.error("Critical Error:", error);
+            
+            // แยกประเภท Error เพื่อแจ้งเตือนให้ตรงจุด
+            if (error.message === "USER_NOT_FOUND") {
+                showFatalError(`USER NOT FOUND (ID: ${currentId}) / ไม่พบผู้ใช้ในระบบ`);
+            } else if (error.code === "PERMISSION_DENIED") {
+                showFatalError("PERMISSION DENIED / ไม่มีสิทธิ์เข้าถึงข้อมูล");
+            } else {
+                showFatalError("CONNECTION ERROR / การเชื่อมต่อล้มเหลว");
+            }
+        });
 });
 
-// ==========================================
-// ฟังก์ชันเรียกหน้าจอแดงเดือด (Error 404)
-// ==========================================
-function showFatalError(reason) {
-    // 1. สร้างหน้าจอ Overlay สีดำ
-    const overlay = document.createElement("div");
-    overlay.id = "error-overlay";
-    overlay.innerHTML = `
-        <h1>ERROR 404</h1>
-        <p>${reason}</p>
-        <button onclick="window.location.href='index.html'">RETURN TO LOGIN</button>
-    `;
-    document.body.appendChild(overlay);
-
-    // 2. ปิดการใช้งานปุ่มทุกอย่างข้างหลัง (Disable All)
-    const allButtons = document.querySelectorAll("button");
-    const allInputs = document.querySelectorAll("input");
-    const allLinks = document.querySelectorAll("a");
-
-    allButtons.forEach(btn => {
-        if(btn.parentElement.id !== "error-overlay") { // ยกเว้นปุ่มในหน้า Error
-            btn.disabled = true;
-            btn.style.opacity = "0.2";
-            btn.style.pointerEvents = "none";
-        }
-    });
-
-    allInputs.forEach(inp => {
-        inp.disabled = true;
-        inp.style.opacity = "0.2";
-    });
-    
-    allLinks.forEach(link => {
-        link.style.pointerEvents = "none";
-        link.style.cursor = "default";
-    });
-
-    // เล่นเสียง Error ถ้ามีไฟล์เสียง
-    // const audio = new Audio('error.mp3'); audio.play();
-}
-
-// ==========================================
-// ระบบ Duty (แยกออกมาให้ดูง่าย)
-// ==========================================
+// ============================================
+// ฟังก์ชันจัดการ Duty (แยกมาเพื่อให้โค้ดสะอาด)
+// ============================================
 function initDutySystem(ref, els) {
     let isOnDuty = localStorage.getItem("isOnDuty") === "true";
     let currentSessionKey = localStorage.getItem("currentSessionKey");
 
+    // Helper: เล่นเสียง
+    const playClick = () => { if(els.clickSound) els.clickSound.play().catch(()=>{}); };
+
+    // Setup ปุ่ม
     if(els.startBtn && els.endBtn) {
         els.startBtn.disabled = isOnDuty;
         els.endBtn.disabled = !isOnDuty;
 
-        els.startBtn.onclick = () => {
+        // กดเริ่มงาน
+        els.startBtn.onclick = function() {
+            if(isOnDuty) return;
             const startTime = new Date().toISOString();
-            const newLogRef = ref.child("dutyLogs").push();
-            newLogRef.set({ startTime, action: "เริ่มปฏิบัติหน้าที่ 🚨" });
             
-            isOnDuty = true;
-            currentSessionKey = newLogRef.key;
-            localStorage.setItem("isOnDuty", "true");
-            localStorage.setItem("currentSessionKey", currentSessionKey);
-            
-            els.startBtn.disabled = true;
-            els.endBtn.disabled = false;
+            // Push ข้อมูลใหม่
+            const newLog = ref.child("dutyLogs").push();
+            newLog.set({
+                startTime: startTime,
+                action: "เริ่มปฏิบัติหน้าที่ 🚨"
+            }).then(() => {
+                isOnDuty = true;
+                currentSessionKey = newLog.key;
+                localStorage.setItem("isOnDuty", "true");
+                localStorage.setItem("currentSessionKey", currentSessionKey);
+                
+                els.startBtn.disabled = true;
+                els.endBtn.disabled = false;
+                playClick();
+            });
         };
 
-        els.endBtn.onclick = () => {
+        // กดออกเวร
+        els.endBtn.onclick = function() {
+            if(!isOnDuty) return;
             const endTime = new Date().toISOString();
-            ref.child("dutyLogs/" + currentSessionKey).update({ endTime, action: "ออกเวร ✅" });
-            
-            isOnDuty = false;
-            currentSessionKey = null;
-            localStorage.removeItem("isOnDuty");
-            localStorage.removeItem("currentSessionKey");
-            
-            els.startBtn.disabled = false;
-            els.endBtn.disabled = true;
+
+            if (currentSessionKey) {
+                ref.child("dutyLogs/" + currentSessionKey).update({
+                    endTime: endTime,
+                    action: "ออกเวร ✅"
+                }).then(() => {
+                    isOnDuty = false;
+                    currentSessionKey = null;
+                    localStorage.removeItem("isOnDuty");
+                    localStorage.removeItem("currentSessionKey");
+                    
+                    els.startBtn.disabled = false;
+                    els.endBtn.disabled = true;
+                    playClick();
+                });
+            } else {
+                // กรณี Error ไม่มี Key เก่า (Force Reset)
+                isOnDuty = false;
+                localStorage.removeItem("isOnDuty");
+                els.startBtn.disabled = false;
+                els.endBtn.disabled = true;
+            }
         };
     }
-    
-    // Realtime Logs
+
+    // Load Logs (Realtime)
     ref.child("dutyLogs").limitToLast(10).on("child_added", snap => {
         const val = snap.val();
         if(els.logs) {
             const li = document.createElement("li");
-            const time = new Date(val.startTime).toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
-            li.innerHTML = `<span style="color:#00ccff">[${time}]</span> ${val.action}`;
-            els.logs.prepend(li);
+            const timeObj = new Date(val.startTime);
+            const timeStr = timeObj.toLocaleTimeString("th-TH", {hour:'2-digit', minute:'2-digit'});
+            
+            li.innerHTML = `<span style="color:#00ccff">[${timeStr}]</span> ${val.action}`;
+            els.logs.prepend(li); // แทรกบนสุด
         }
     });
+}
+
+// ============================================
+// ฟังก์ชันหน้าจอ Error (Error 404 Overlay)
+// ============================================
+function showFatalError(message) {
+    // สร้าง Overlay ถ้ายังไม่มี
+    let overlay = document.getElementById("error-overlay");
+    if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "error-overlay";
+        document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+        <div style="text-align:center;">
+            <h1 class="glitch-text">ERROR 404</h1>
+            <p style="color:white; font-size:1.5rem; margin-top:10px;">${message}</p>
+            <button id="retryBtn" style="margin-top:20px; padding:10px 20px; font-size:1.2rem; cursor:pointer; background:red; color:white; border:none;">
+                RESET SYSTEM (RE-LOGIN)
+            </button>
+        </div>
+    `;
+
+    // ปุ่ม Reset จะล้าง LocalStorage เพื่อให้เริ่มใหม่ได้
+    document.getElementById("retryBtn").onclick = () => {
+        localStorage.clear();
+        window.location.reload(); // รีโหลดหน้าเว็บเพื่อให้ถาม ID ใหม่
+    };
+    
+    // Disable interaction with background
+    document.body.style.overflow = "hidden";
 }
