@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<audio id="clickSound" src="click.mp3" preload="auto"></audio>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMARTSTORM V3.25 - ADD USER</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+body{background:#36393f;color:#dcddde;height:100vh;display:flex;flex-direction:column}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:#2f3136;border-bottom:1px solid #202225}
+header .logo-title{display:flex;align-items:center;gap:12px}
+header .logo-title .logo{height:40px;border-radius:6px}
+header .logo-title h1{font-size:16px;font-weight:600;color:#ffffff}
+header .buttons{display:flex;gap:8px}
+header .buttons button, header .buttons a button{padding:8px 16px;border:none;border-radius:4px;font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;color:#dcddde}
+header .buttons button:hover, header .buttons a button:hover{background:#5865f2}
+header .buttons .home{background:#5865f2}
+header .buttons .exit{background:#ed4245}
+
+/* Main Layout */
+main{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:240px;background:#2f3136;border-right:1px solid #202225;padding:16px;display:flex;flex-direction:column;gap:8px}
+.sidebar h2{font-size:12px;text-transform:uppercase;font-weight:600;color:#8e9297;margin-bottom:8px;letter-spacing:.02em}
+.sidebar button{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:4px;border:none;background:#36393f;color:#dcddde;cursor:pointer;font-size:14px;text-align:left;transition:background .2s}
+.sidebar button:hover{background:#404249;color:#ffffff}
+.sidebar hr{border:0;border-top:1px solid rgba(255,255,255,0.2);margin:10px 0}
+
+/* Content */
+.content{flex:1;padding:20px;background:#2f3136;color:#dcddde;border-radius:10px;margin:16px;overflow:auto;box-shadow: inset 0 0 15px rgba(0,0,0,0.2)}
+.content h1{margin-bottom:20px;font-size:18px;color:#ffffff}
+
+/* Form Styling */
+form{display:flex;flex-direction:column;gap:15px}
+label{display:flex;flex-direction:column;font-weight:600;font-size:14px;color:#ffffff}
+input[type="text"], input[type="password"], input[type="number"]{padding:10px;border-radius:6px;border:1px solid #555;background:#202225;color:#fff;font-size:14px;margin-top:5px}
+label.checkbox-label{flex-direction:row;align-items:center;gap:8px;font-weight:600;font-size:14px;color:#ffffff}
+button[type="submit"]{background:#5865f2;color:#fff;border:none;padding:10px;border-radius:4px;font-weight:600;cursor:pointer;transition:background .2s}
+button[type="submit"]:hover{background:#4752c4}
+#status{font-weight:bold;margin-top:10px;color:#1d4ed8}
+
+/* Firebase Link */
+.firebase-link{display:block;margin-top:10px;padding:10px;background:#5865f2;color:#fff;text-align:center;border-radius:6px;text-decoration:none;font-weight:600;transition:background .2s}
+.firebase-link:hover{background:#4752c4}
+
+/* Responsive */
+@media(max-width:768px){
+  main{flex-direction:column}
+  .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:10px;gap:5px}
+  .content{margin:10px;padding:15px}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="logo-title">
+    <img src="CHPSS.png" alt="logo" class="logo">
+    <h1>SMARTSTORM V3.25 - ADD USER</h1>
+  </div>
+  <div class="buttons">
+    <a href="../dashboard.html"><button class="home">🏠 Home</button></a>
+    <button class="exit" onclick="window.location.href='../index.html'">🚪 EXIT</button>
+  </div>
+</header>
+
+<main>
+  <aside class="sidebar">
+    <h2>Document Reports</h2>
+    <button onclick="window.location.href='../Evidences/evidencereport.html'">📂 Evidence Report</button>
+    <button>🧱 Mugshot</button>
+    <button>📝 Routine</button>
+    <button>📑 Use Of Force</button>
+    <hr>
+  </aside>
+
+  <section class="content">
+<!-- เพิ่มในฟอร์ม -->
+<form id="userForm">
+  <label>ชื่อผู้ใช้:
+    <input type="text" id="username" required>
+  </label>
+  <label>รหัสผ่าน:
+    <input type="password" id="password" required>
+  </label>
+  <label>ชื่อ-สกุล:
+    <input type="text" id="name" required>
+  </label>
+  <label>ตำแหน่ง:
+    <input type="text" id="rank" required>
+  </label>
+  <label>Callsign:
+    <input type="text" id="callsign" required>
+  </label>
+  <label>Badge ID:
+   <input type="number" id="badgeId" required>
+  </label>
+
+  <!-- ✅ อัปโหลดรูปโปรไฟล์ -->
+  <label>รูปโปรไฟล์:
+    <input type="file" id="profilePic" accept="image/*">
+  </label>
+  <img id="preview" src="" style="max-width:100px;margin-top:10px;display:none;border-radius:50%;">
+
+  <label class="checkbox-label"><input type="checkbox" id="isAdmin"> เป็น Admin</label>
+  <button type="submit">บันทึกข้อมูล</button>
+  <p id="status"></p>
+</form>
+
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="DDS.js"></script>
+</body>
+</html>
+
