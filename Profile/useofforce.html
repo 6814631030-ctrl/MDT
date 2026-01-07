@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAHP Evidence Report System</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#36393f;color:#dcddde;height:100vh;display:flex;flex-direction:column}
+.header{background:#2f3136;padding:12px 20px;border-bottom:1px solid #202225;display:flex;align-items:center;justify-content:space-between}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{width:32px;height:32px;background:#5865f2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;color:white}
+.logo-title{display:flex;align-items:center;gap:12px}
+.logo-title .logo{width:32px;height:32px;border-radius:50%;background: #2f3136;}
+.logo-title h1{font-size:16px;font-weight:600;color:#ffffff}
+.channel-info h1{font-size:16px;font-weight:600;color:#ffffff}
+.channel-info p{font-size:12px;color:#b9bbbe}
+.header-right{display:flex;gap:8px}
+.header-btn{background:#4f545c;border:none;color:#dcddde;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:14px;transition:background .2s}
+.header-btn:hover{background:#5865f2}
+.home-btn{background:#5865f2}
+.exit-btn{background:#ed4245}
+.admin-btn{background:#3b3b3b}
+.main-container{display:flex;flex:1;height:calc(100vh - 60px)}
+/* Sidebar */
+.sidebar{width:240px;background:#2f3136;border-right:1px solid #202225;padding:16px;display:flex;flex-direction:column;gap:8px}
+.sidebar h2{font-size:12px;text-transform:uppercase;font-weight:600;color:#8e9297;margin-bottom:8px;letter-spacing:.02em}
+.sidebar button{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:4px;border:none;background:#36393f;color:#dcddde;cursor:pointer;font-size:14px;text-align:left;transition:background .2s}
+.sidebar button:hover{background:#404249;color:#ffffff}
+.sidebar hr{border:0;border-top:1px solid rgba(255,255,255,0.2);margin:10px 0}
+.chat-container{flex:1;display:flex;flex-direction:column;background:#36393f}
+.messages-area{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.message{display:flex;gap:16px;padding:8px 16px;border-radius:8px;transition:background .1s}
+.message:hover{background:#32353b}
+.message-avatar{width:40px;height:40px;border-radius:50%;background:#5865f2;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:14px;flex-shrink:0}
+.message-content{flex:1}
+.message-header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.message-author{font-weight:600;color:#ffffff;font-size:16px}
+.message-timestamp{font-size:12px;color:#72767d}
+.message-Ev{font-size:20px;color:#ffffff;font-weight: bold}
+.message-title{font-size:18px;font-weight:600;color:#ffffff;margin-bottom:8px;font-weight: bold}
+.message-text{color:#dcddde;line-height:1.375;word-wrap:break-word;margin-bottom:8px}
+.message-image{max-width:400px;max-height:300px;border-radius:8px;cursor:pointer;transition:opacity .2s}
+.message-image:hover{opacity:.85}
+.input-container{padding:16px;background:#36393f;border-top:1px solid #40444b}
+.input-wrapper{background:#40444b;border-radius:8px;padding:16px;position:relative}
+.input-row{display:flex;gap:12px;margin-bottom:12px}
+.input-field{flex:1;background:#2f3136;border:1px solid #202225;border-radius:6px;padding:12px;color:#dcddde;font-size:14px;resize:none}
+.input-field:focus{outline:none;border-color:#5865f2}
+.input-field::placeholder{color:#72767d}
+.textarea-field{min-height:80px}
+.bottom-row{display:flex;justify-content:space-between;align-items:center}
+.file-upload{display:flex;align-items:center;gap:8px}
+.file-input{display:none}
+.file-label{background:#4f545c;color:#dcddde;padding:8px 12px;border-radius:4px;cursor:pointer;font-size:14px;transition:background .2s;display:flex;align-items:center;gap:6px}
+.file-label:hover{background:#5865f2}
+.file-name{font-size:12px;color:#b9bbbe}
+.submit-btn{background:#5865f2;border:none;color:white;padding:10px 24px;border-radius:4px;cursor:pointer;font-size:14px;font-weight:500;transition:background .2s}
+.submit-btn:hover{background:#4752c4}
+.submit-btn:disabled{background:#4f545c;cursor:not-allowed}
+.empty-state{text-align:center;padding:40px;color:#72767d}
+.empty-state h3{font-size:20px;margin-bottom:8px;color:#b9bbbe}
+.message-actions{margin-top:8px;display:flex;gap:6px}
+.message-actions button{background:#2f3136;border:1px solid #444;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:.2s;color:#ddd}
+.message-actions button:hover{background:#40444b;border-color:#666}
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:#2f3136}
+::-webkit-scrollbar-thumb{background:#202225;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#40444b}
+.report-card {
+  background: #2f3136;
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-top: 10px;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+.report-card h2 {
+  text-align: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 5px;
+}
+.section {
+  margin-bottom: 15px;
+}
+.section h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #00b0f4;
+}
+.section ul {
+  list-style: none;
+  padding: 0;
+}
+.section ul li {
+  margin: 5px 0;
+}
+.message-content img.message-image {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #444;
+  margin-top: 10px;
+}
+.logo {
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#5865f2;
+  color:#fff;
+  font-weight:700;
+  font-size:16px;
+  user-select:none;
+}
+.logo img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo-title">
+    <img src="../CHPSS.png" alt="logo" class="logo">
+    <h1>SMARTSTORM V3.25 - POLICE MDT</h1>
+  </div>
+<div class="header-left">
+  <div class="logo" id="logoRoot">SP</div>
+  <div class="channel-info">
+    <h1>Profile Setting</h1>
+    <p id="userInfo">กำลังโหลดข้อมูลผู้ใช้...</p>
+  </div>
+</div>
+  <div class="header-right">
+    <button class="header-btn home-btn" onclick="window.location.href='../dashboard.html'">🏠 Home</button>
+    <button class="header-btn exit-btn" onclick="window.location.href='../index.html'">🚪 Exit</button>
+    <button class="header-btn admin-btn" id="adminBtn">⚙️ Admin Panel</button>
+    <script>
+      const adminBtn = document.getElementById("adminBtn");
+      const isAdmin = localStorage.getItem("isAdmin") === "true";
+
+      if (adminBtn) {
+         if (isAdmin) {
+            adminBtn.style.display = "block"; // แสดงปุ่ม Admin
+              } else {
+            adminBtn.style.display = "none"; // ซ่อนถ้าไม่ใช่ Admin
+            }
+
+         // คลิกปุ่ม Admin ไปหน้า Admincmds.html
+            adminBtn.addEventListener("click", () => {
+            window.location.href = "../Commands/Admincmds.html";
+          });
+    }
+    </script>
+  </div>
+</header>
+
+<div class="main-container">
+  <aside class="sidebar">
+    <h2>Document Reports</h2>
+    <button onclick="window.location.href='../Evidences/evidencereport.html'">📂 Evidence Report</button>
+    <button>🧱 Mugshot</button>
+    <button>📝 Routine</button>
+    <button>📑 Use Of Force</button>
+    <hr>
+  </aside>
+
+
+  <main class="chat-container">
+    <div class="messages-area" id="messagesArea">
+      <div class="empty-state" id="emptyState">
+        <h3>👮‍♂️ ยินดีต้อนรับเข้าสู่ระบบรายงานหลักฐาน</h3>
+        <p>เริ่มต้นสร้างรายงานแรกของคุณด้านล่าง</p>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <form class="input-wrapper" id="reportForm">
+        <div class="input-row">
+          <input type="text" class="input-field" id="suspectInput" placeholder="Suspect Name... ชื่อผู้ต้องสงสัย Suspect Name" required>
+        </div>
+        <div class="input-row">
+          <input type="text" class="input-field" id="typeInput" placeholder="Evidence Type...  ประเภท Weapons, Narcostics, Others" required>
+        </div>
+        <div class="input-row">
+          <textarea class="input-field textarea-field" id="itemsInput" placeholder="Evidence ITEM(S)... หลักฐานอะไรบ้าง " required></textarea>
+        </div>
+        <div class="bottom-row">
+          <div class="file-upload">
+          <label class="file-label" for="imageInput">📎 แนบรูปภาพ</label>
+          <input type="file" class="file-input" id="imageInput" accept="image/*">
+          <span class="file-name" id="fileName"></span>
+          </div>
+          <button type="submit" class="submit-btn">📤 ส่งรายงาน</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="fb.js"></script>
+
+</body>
+</html>
