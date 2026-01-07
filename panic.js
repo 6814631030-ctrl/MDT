@@ -1,6 +1,6 @@
 // ====== CONFIGURATION ======
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1458501367210447040/FAjI0D3o_9xkHmxf-gmynt2geNgdxKZUWtW0jCuAbKRkqjKk2NXzik9suNvB8c_7w0cH";
-const COOLDOWN_TIME_MS = 3 * 60 * 1000; // 3 นาที
+const COOLDOWN_TIME_MS = 0 * 1 * 200; // 3 นาที
 
 // รายการสถานการณ์
 const panicSituations = [
@@ -12,6 +12,7 @@ const panicSituations = [
     "Terrorist Threat (เหตุก่อการร้าย)",
     "10-13 Emergency (ต้องการความช่วยเหลือฉุกเฉิน)"
 ];
+
 
 // ====== INIT SYSTEM ======
 document.addEventListener("DOMContentLoaded", () => {
@@ -29,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 2. ตรวจสอบ Cooldown
     checkCooldownTimer();
-    setInterval(checkCooldownTimer, 1000);
+    setInterval(checkCooldownTimer, 200);
 
     // 3. ผูกปุ่มกด Panic (ปุ่มบน Header)
     // ตรงนี้ผม selector ตามที่คุณส่งมาก่อนหน้า
