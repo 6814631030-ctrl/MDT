@@ -270,6 +270,8 @@
     </div>
   </div>
 
+  
+
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
@@ -284,6 +286,13 @@
     }
     setInterval(updateTime, 1000);
     updateTime();
+
+    function playClickSound() {
+        if (!keyClickSound) return;
+        keyClickSound.currentTime = 0;
+        const p = keyClickSound.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+    }
   </script>
 </body>
 </html>
